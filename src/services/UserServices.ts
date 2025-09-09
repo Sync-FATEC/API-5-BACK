@@ -43,4 +43,13 @@ export class UserServices {
       throw error;
     }
   }
+
+  async forgotPassword(email: string) {
+    try {
+      await usersRepository.forgotPassword(email);
+      return "Email de redefinição de senha enviado";
+    } catch (error) {
+      throw error;
+    }
+  }
 }
