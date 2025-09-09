@@ -6,5 +6,6 @@ const router = Router()
 
 router.post("/register", userController.create);
 router.post("/login", userController.login);
+router.put("/forgot-password", userController.forgotPassword);
 
 export default router;

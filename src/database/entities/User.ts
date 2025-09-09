@@ -20,4 +20,10 @@ export class Users {
 
     @Column({ type: "timestamp", default: () => "CURRENT_TIMESTAMP" })
     createdAt!: Date
+
+    @Column({ type: "timestamp", default: () => "CURRENT_TIMESTAMP + interval '1 year'" })
+    validUntil!: Date
+
+    @Column({ type: "boolean", default: true })
+    isActive!: boolean
 }

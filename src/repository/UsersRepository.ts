@@ -27,18 +27,27 @@ export class UsersRepository {
         try {
             const userFirebase = await createUserWithEmailAndPassword(firebaseAuth, user.email as string, user.email as string)
 
-            await sendPasswordResetEmail(firebaseAuth, user.email as string)
+            await this.forgotPassword(user.email as string)
 
             const userDB = await this.create({
                 email: user.email as string,
                 name: user.name as string,
                 firebaseUid: userFirebase.user.uid,
-                role: RoleEnum.SOLDADO,
+                role: user.role as RoleEnum,
             })
 
             return userDB
         } catch (error) {
             console.error("Erro ao criar o usuario", error)
+            throw error
+        }
+    }
+
+    async forgotPassword(email: string) {
+        try {
+            await sendPasswordResetEmail(firebaseAuth, email)
+        } catch (error) {
+            console.error("Erro ao resetar a senha", error)
             throw error
         }
     }
