@@ -27,15 +27,16 @@ export class UsersRepository {
         try {
             const userFirebase = await createUserWithEmailAndPassword(firebaseAuth, user.email as string, user.email as string)
 
-            await this.forgotPassword(user.email as string)
-
+            
             const userDB = await this.create({
                 email: user.email as string,
                 name: user.name as string,
                 firebaseUid: userFirebase.user.uid,
                 role: user.role as RoleEnum,
             })
-
+            
+            await this.forgotPassword(user.email as string)
+            
             return userDB
         } catch (error) {
             console.error("Erro ao criar o usuario", error)
@@ -45,6 +46,16 @@ export class UsersRepository {
 
     async forgotPassword(email: string) {
         try {
+            const user = await repository.findOne({
+                where: {
+                    email
+                }
+            })
+
+            if(!user) {
+                throw new SystemError("Email não cadastrado")
+            }
+
             await sendPasswordResetEmail(firebaseAuth, email)
         } catch (error) {
             console.error("Erro ao resetar a senha", error)
@@ -52,8 +63,6 @@ export class UsersRepository {
         }
     }
 
-
-    // Função para buscar o usuario pelo email e retornar as compras e configurações
     async getUserByEmail(email: string) {
         try {
             return await repository.findOne({
