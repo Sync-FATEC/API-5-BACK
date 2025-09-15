@@ -1,29 +1,33 @@
-import { Column, Entity, PrimaryGeneratedColumn } from "typeorm";
+import { Column, Entity, PrimaryGeneratedColumn, OneToMany } from "typeorm";
+import { UserStock } from "./UserStock";
 import { RoleEnum } from "../enums/RoleEnum";
 
 @Entity()
-export class Users {
-    @PrimaryGeneratedColumn("uuid")
-    id!: string
+export class User {
+    @PrimaryGeneratedColumn('uuid')
+    id!: string;
 
     @Column({ type: 'varchar', length: 255, unique: true })
-    email!: string
+    email!: string;
 
     @Column({ type: 'varchar', length: 255 })
-    name!: string
+    name!: string;
 
     @Column({ type: 'varchar', length: 255 })
-    firebaseUid!: string
+    firebaseUid!: string;
 
     @Column({ type: "enum", enum: RoleEnum, default: RoleEnum.SOLDADO })
-    role!: RoleEnum
+    role!: RoleEnum;
 
     @Column({ type: "timestamp", default: () => "CURRENT_TIMESTAMP" })
-    createdAt!: Date
+    createdAt!: Date;
 
     @Column({ type: "timestamp", default: () => "CURRENT_TIMESTAMP + interval '1 year'" })
-    validUntil!: Date
+    validUntil!: Date;
 
     @Column({ type: "boolean", default: true })
-    isActive!: boolean
+    isActive!: boolean;
+    
+    @OneToMany(() => UserStock, userStock => userStock.user)
+    userStocks!: UserStock[];
 }
