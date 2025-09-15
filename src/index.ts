@@ -9,6 +9,7 @@ import { initializeApp } from "firebase/app";
 import { getAuth } from "firebase/auth";
 
 import authRouter from "./routes/authRoutes";
+import productRouter from "./routes/productRoutes";
 
 const firebaseConfig = {
   apiKey: process.env.FIREBASE_API_KEY,
@@ -35,6 +36,9 @@ app.use("/auth", authRouter);
 
 // Apatir daqui todas as rotas precisam de autenticação
 app.use(authMiddleware);
+
+// Rotas protegidas por autenticação
+app.use("/products", productRouter);
 
 // Middleware para tratamento de erros SystemError
 app.use(systemErrorHandler);
