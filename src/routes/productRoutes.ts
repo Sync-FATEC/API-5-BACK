@@ -8,6 +8,7 @@ const router = Router();
 
 router.get("/", AuthMiddleware.requireRole([RoleEnum.SOLDADO, RoleEnum.SUPERVISOR, RoleEnum.ADMIN]), productController.listAll);
 router.get("/:id", AuthMiddleware.requireRole([RoleEnum.SOLDADO, RoleEnum.SUPERVISOR, RoleEnum.ADMIN]), productController.getById);
+router.get("/:id/qrcode", AuthMiddleware.requireRole([RoleEnum.SOLDADO, RoleEnum.SUPERVISOR, RoleEnum.ADMIN]), productController.generateQRCode);
 
 router.post("/", AuthMiddleware.requireRole([RoleEnum.SOLDADO, RoleEnum.SUPERVISOR, RoleEnum.ADMIN]), productController.create);
 router.put("/:id", AuthMiddleware.requireRole([RoleEnum.SOLDADO, RoleEnum.SUPERVISOR, RoleEnum.ADMIN]), productController.update);

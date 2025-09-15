@@ -2,6 +2,7 @@ import { Request, Response, NextFunction } from "express";
 import { ProductType } from "../types/ProductType";
 import { SystemError } from "../middlewares/SystemError";
 import { ProductService } from "../services/ProductService";
+import * as QRCode from 'qrcode';
 
 const productService = new ProductService();
 
@@ -116,6 +117,52 @@ export class ProductController {
                 success: true,
                 message: "Produto removido com sucesso"
             });
+        } catch (error) {
+            next(error);
+        }
+    }
+
+    async generateQRCode(req: Request, res: Response, next: NextFunction) {
+        try {
+            const { id } = req.params;
+            const { format } = req.query;
+            
+            if (!id) {
+                throw new SystemError("ID do produto é obrigatório");
+            }
+
+            const product = await productService.getProductById(id);
+            
+            if (!product) {
+                throw new SystemError("Produto não encontrado");
+            }
+
+            const qrCodeData = {
+                id: product.id,
+                name: product.name,
+                fichNumber: product.fichNumber,
+                quantity: product.quantity,
+                unitOfMeasure: product.unitOfMeasure,
+                group: product.group
+            };
+
+            const qrCodeString = JSON.stringify(qrCodeData);
+
+            const qrCodeFormat = (format as string)?.toLowerCase() === 'svg' ? 'svg' : 'png';
+
+            if (qrCodeFormat === 'svg') {
+                const qrCodeSvg = await QRCode.toString(qrCodeString, { type: 'svg' });
+                
+                res.setHeader('Content-Type', 'image/svg+xml');
+                res.setHeader('Content-Disposition', `attachment; filename="product-${id}-qrcode.svg"`);
+                return res.status(200).send(qrCodeSvg);
+            } else {
+                const qrCodeBuffer = await QRCode.toBuffer(qrCodeString);
+                
+                res.setHeader('Content-Type', 'image/png');
+                res.setHeader('Content-Disposition', `attachment; filename="product-${id}-qrcode.png"`);
+                return res.status(200).send(qrCodeBuffer);
+            }
         } catch (error) {
             next(error);
         }
