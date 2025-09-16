@@ -32,16 +32,16 @@ export class UserController {
 
     async login(req: Request, res: Response, next: NextFunction) {
         try {
-            const { firebaseUid, idToken } = req.body;
+            const { email, password } = req.body;
 
-            if (!firebaseUid || !idToken) {
-                throw new SystemError("Firebase UID e token são obrigatórios");
+            if (!email || !password) {
+                throw new SystemError("Email e senha são obrigatórios");
             }
 
-            const user = await userServices.loginUser(firebaseUid, idToken);
+            const loginResult = await userServices.loginWithEmailPassword(email, password);
             res.status(200).json({
                 success: true,
-                data: user,
+                data: loginResult,
                 message: "Login realizado com sucesso"
             });
         } catch (error) {
@@ -61,6 +61,25 @@ export class UserController {
             res.status(200).json({
                 success: true,
                 message: "Email de redefinição de senha enviado"
+            });
+        } catch (error) {
+            next(error);
+        }
+    }
+
+    async getUserData(req: Request, res: Response, next: NextFunction) {
+        try {
+            const email = req.params.email;
+
+            if (!email) {
+                throw new SystemError("Usuário não autenticado");
+            }
+
+            const userData = await userServices.getUserData(email);
+            res.status(200).json({
+                success: true,
+                data: userData,
+                message: "Dados do usuário obtidos com sucesso"
             });
         } catch (error) {
             next(error);
