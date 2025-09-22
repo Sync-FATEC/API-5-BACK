@@ -131,12 +131,12 @@ async function seedStocks() {
       active: true
     },
     {
-      name: "Estoque Médico",
+      name: "Farmácia",
       location: "Enfermaria - Ala Norte",
       active: true
     },
     {
-      name: "Estoque Almoxarifado",
+      name: "Almoxarifado",
       location: "Almoxarifado - Setor B",
       active: true
     }

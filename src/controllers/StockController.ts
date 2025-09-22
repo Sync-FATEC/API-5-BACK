@@ -33,7 +33,7 @@ export class StockController {
 
             res.status(201).json({
                 success: true,
-                data: stock,
+                data: [stock]
             });
         } catch (error) {
             next(error)

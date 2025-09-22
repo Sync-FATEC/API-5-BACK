@@ -6,7 +6,7 @@ import { RoleEnum } from "../database/enums/RoleEnum";
 const repository = AppDataSource.getRepository(Stock);
 
 export class StockRepository {
-    async getStocksByUserId(userId: string, userRole: string) { 
+    async getStocksByUserId(userId: string, userRole: string) {
         try {
             let stocks;
 
@@ -20,8 +20,8 @@ export class StockRepository {
 
             if (!stocks || stocks.length === 0) {
                 throw new SystemError("Nenhum estoque encontrado para o usuário fornecido");
-            }   
-            
+            }
+
             return stocks;
         } catch (error) {
             console.error("Erro ao buscar estoques do usuário", error);
