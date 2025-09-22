@@ -5,6 +5,8 @@ import { User } from "./entities/User";
 import { Batch } from "./entities/Batch";
 import { Merchandise } from "./entities/Merchandise";
 import { MerchandiseType } from "./entities/MerchandiseType";
+import { Product } from "./entities/Product";
+import { ProductType } from "./entities/ProductType";
 import { Order } from "./entities/Order";
 import { OrderItem } from "./entities/OrderItem";
 import { Stock } from "./entities/Stock";
@@ -20,5 +22,5 @@ export const AppDataSource = new DataSource({
   database: process.env.DB_NAME,
   synchronize: true,
   logging: false,
-  entities: [User, Batch, Merchandise, MerchandiseType, Order, OrderItem, Stock, UserStock],
+  entities: [User, Batch, Merchandise, MerchandiseType, Product, ProductType, Order, OrderItem, Stock, UserStock],
 });

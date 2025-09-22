@@ -11,6 +11,7 @@ import { getAuth } from "firebase/auth";
 import authRouter from "./routes/authRoutes";
 import stockRouter from "./routes/StockRoutes";
 import productRouter from "./routes/productRoutes";
+import productTypeRouter from "./routes/productTypeRoutes";
 
 const firebaseConfig = {
   apiKey: process.env.FIREBASE_API_KEY,
@@ -40,6 +41,7 @@ app.use(authMiddleware);
 
 // Rotas protegidas por autenticação
 app.use("/products", productRouter);
+app.use("/product-types", productTypeRouter);
 app.use("/stocks", stockRouter);
 
 // Middleware para tratamento de erros SystemError
