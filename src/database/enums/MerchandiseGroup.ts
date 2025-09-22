@@ -1,3 +1,4 @@
 export enum MerchandiseGroup {
-    Medical= 1
+    Medical,
+    Almox,
 }

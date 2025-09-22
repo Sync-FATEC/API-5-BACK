@@ -13,6 +13,9 @@ export class Stock {
     @Column()
     location!: string;
 
+    @Column({ default: true })
+    active!: boolean;
+
     @OneToMany(() => UserStock, userStock => userStock.stock)
     userStocks!: UserStock[];
 

@@ -1,12 +1,12 @@
 import { AppDataSource } from "../database/data-source";
-import { Users } from "../database/entities/User";
+import { User } from "../database/entities/User";
 import { SystemError } from "../middlewares/SystemError";
 import { UsersType } from "../types/UsersType";
 import { RoleEnum } from "../database/enums/RoleEnum";
 import { sendPasswordResetEmail, createUserWithEmailAndPassword } from "firebase/auth";
 import { firebaseAuth } from "../index";
 
-const repository = AppDataSource.getRepository(Users)
+const repository = AppDataSource.getRepository(User)
 
 export class UsersRepository {
 
@@ -79,11 +79,12 @@ export class UsersRepository {
     // Função para puxar user pelo firebaseUid
     async getUserByFirebaseId(firebaseUid: string) {
         try {
-            return await repository.findOne({
+            const user = await repository.findOne({
                 where: {
                     firebaseUid
                 },
             })
+            return user
         } catch (error) {
             console.error("Erro ao buscar o usuario", error)
             throw error;
@@ -106,6 +107,21 @@ export class UsersRepository {
             return true
         } catch (error) {
             console.error("Erro ao validar o usuario", error)
+            throw error;
+        }
+    }
+
+    async getUserRole(firebaseUid: string) {
+        try {
+            const user = await this.getUserByFirebaseId(firebaseUid)
+
+            if(!user) {
+                throw new SystemError("Usuario não encontrado")
+            }
+
+            return user.role
+        } catch (error) {
+            console.error("Erro ao buscar o role do usuario", error)
             throw error;
         }
     }
