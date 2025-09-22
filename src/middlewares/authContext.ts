@@ -17,9 +17,6 @@ declare global {
 const userRepository = new UsersRepository();
 
 export class AuthMiddleware {
-  /**
-   * Middleware de autenticação que verifica o token Firebase e carrega dados do usuário
-   */
   static async authenticate(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const token = AuthMiddleware.extractToken(req);
@@ -92,9 +89,6 @@ export class AuthMiddleware {
     }
   }
 
-  /**
-   * Trata erros de autenticação de forma centralizada
-   */
   private static handleAuthError(error: unknown, res: Response): void {
     console.error('Erro de autenticação:', error);
     
@@ -113,19 +107,47 @@ export class AuthMiddleware {
     }
   }
 
-  /**
-   * Middleware opcional para verificar se o usuário tem permissões específicas
-   */
-  static requireRole(roles: string[]) {
-    return (req: Request, res: Response, next: NextFunction): void => {
-      if (!req.user?.userData?.role || !roles.includes(req.user.userData.role)) {
-        res.status(403).json({ 
-          error: 'Permissões insuficientes.',
-          code: 'INSUFFICIENT_PERMISSIONS'
+  static requireRole(role: string) {    
+    return async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+      try {
+        const firebaseUid = req.user?.uid;
+        
+        if (!firebaseUid) {
+          res.status(403).json({ 
+            error: 'Permissões insuficientes.',
+            code: 'INSUFFICIENT_PERMISSIONS'
+          });
+          return;
+        }
+
+        const userRole = await userRepository.getUserRole(firebaseUid);
+
+        const roleHierarchy: { [key: string]: string[] } = {
+          'SOLDADO': ['SOLDADO'],
+          'SUPERVISOR': ['SOLDADO', 'SUPERVISOR'],
+          'ADMIN': ['SOLDADO', 'SUPERVISOR', 'ADMIN']
+        };
+
+        const userAccessibleRoles = roleHierarchy[userRole] || [];
+
+        const hasPermission = userAccessibleRoles.includes(role);
+
+        if (!hasPermission) {
+          res.status(403).json({ 
+            error: 'Permissões insuficientes.',
+            code: 'INSUFFICIENT_PERMISSIONS'
+          });
+          return;
+        }
+        
+        next();
+      } catch (error) {
+        console.error('Erro ao verificar permissões:', error);
+        res.status(500).json({ 
+          error: 'Erro interno do servidor.',
+          code: 'INTERNAL_ERROR'
         });
-        return;
       }
-      next();
     };
   }
 }

@@ -19,8 +19,8 @@ export class MerchandiseType {
     @Column()
     controlled!: boolean;
 
-    @Column()
-    group!: MerchandiseGroup ;
+    @Column({ type: 'enum', enum: MerchandiseGroup })
+    group!: MerchandiseGroup;
 
     @Column()
     minimumStock!: number;

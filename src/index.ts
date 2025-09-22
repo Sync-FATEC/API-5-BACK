@@ -9,6 +9,7 @@ import { initializeApp } from "firebase/app";
 import { getAuth } from "firebase/auth";
 
 import authRouter from "./routes/authRoutes";
+import stockRouter from "./routes/StockRoutes";
 import productRouter from "./routes/productRoutes";
 
 const firebaseConfig = {
@@ -39,6 +40,7 @@ app.use(authMiddleware);
 
 // Rotas protegidas por autenticação
 app.use("/products", productRouter);
+app.use("/stocks", stockRouter);
 
 // Middleware para tratamento de erros SystemError
 app.use(systemErrorHandler);

@@ -1,8 +1,14 @@
 import "reflect-metadata";
 import { DataSource } from "typeorm";
 import { config } from "dotenv";
-import { Users } from "./entities/User";
-import { Product } from "./entities/Product";
+import { User } from "./entities/User";
+import { Batch } from "./entities/Batch";
+import { Merchandise } from "./entities/Merchandise";
+import { MerchandiseType } from "./entities/MerchandiseType";
+import { Order } from "./entities/Order";
+import { OrderItem } from "./entities/OrderItem";
+import { Stock } from "./entities/Stock";
+import { UserStock } from "./entities/UserStock";
 config();
 
 export const AppDataSource = new DataSource({
@@ -14,5 +20,5 @@ export const AppDataSource = new DataSource({
   database: process.env.DB_NAME,
   synchronize: true,
   logging: false,
-  entities: [Users, Product],
+  entities: [User, Batch, Merchandise, MerchandiseType, Order, OrderItem, Stock, UserStock],
 });
