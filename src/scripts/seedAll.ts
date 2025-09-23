@@ -15,6 +15,7 @@ import { MerchandiseType } from "../database/entities/MerchandiseType";
 import { Merchandise, MerchandiseStatus } from "../database/entities/Merchandise";
 import { Order } from "../database/entities/Order";
 import { OrderItem } from "../database/entities/OrderItem";
+import { Section } from "../database/entities/Section";
 
 
 config();
@@ -368,43 +369,64 @@ async function seedMerchandises(batches: Batch[], merchandiseTypes: MerchandiseT
 
 
 
-async function seedOrders() {
+async function seedSections() {
+  console.log("=== Criando Seções ===");
+  const sectionRepository = AppDataSource.getRepository(Section);
+  const sections = [
+    { name: "Almoxarifado" },
+    { name: "Farmácia" },
+    { name: "Enfermaria" }
+  ];
+  const createdSections: Section[] = [];
+  for (const sectionData of sections) {
+    let section = await sectionRepository.findOne({ where: { name: sectionData.name } });
+    if (!section) {
+      section = new Section();
+      section.name = sectionData.name;
+      section = await sectionRepository.save(section);
+      console.log(`Seção criada: ${section.name}`);
+    } else {
+      console.log(`Seção já existe: ${section.name}`);
+    }
+    createdSections.push(section);
+  }
+  return createdSections;
+}
+
+async function seedOrders(sections: Section[]) {
   console.log("=== Criando Pedidos ===");
   const orderRepository = AppDataSource.getRepository(Order);
-
   const orders = [
     {
       creationDate: new Date('2024-01-15'),
       withdrawalDate: new Date('2024-01-20'),
-      status: "COMPLETED"
+      status: "COMPLETED",
+      section: sections[0]
     },
     {
       creationDate: new Date('2024-01-25'),
       withdrawalDate: null,
-      status: "PENDING"
+      status: "PENDING",
+      section: sections[1]
     },
     {
       creationDate: new Date('2024-01-30'),
       withdrawalDate: null,
-      status: "PROCESSING"
+      status: "PROCESSING",
+      section: sections[2]
     }
   ];
-
   const createdOrders: Order[] = [];
-
   for (const orderData of orders) {
     const order = new Order();
     order.creationDate = orderData.creationDate;
-    // Usar cast para lidar com o tipo nullable
     order.withdrawalDate = orderData.withdrawalDate as any;
     order.status = orderData.status;
-
+    order.section = orderData.section;
     const savedOrder = await orderRepository.save(order);
     createdOrders.push(savedOrder);
-
-    console.log(`Pedido criado: ${savedOrder.status} - Data: ${savedOrder.creationDate.toISOString().split('T')[0]}`);
+    console.log(`Pedido criado: ${savedOrder.status} - Data: ${savedOrder.creationDate.toISOString().split('T')[0]} - Seção: ${savedOrder.section.name}`);
   }
-
   return createdOrders;
 }
 
@@ -473,10 +495,13 @@ async function seedAll() {
     // 6. Criar mercadorias (depende de batches, merchandiseTypes e stocks)
     const merchandises = await seedMerchandises(batches, merchandiseTypes, stocks);
 
-    // 7. Criar pedidos (independente)
-    const orders = await seedOrders();
+    // 7. Criar seções (independente)
+    const sections = await seedSections();
 
-    // 8. Criar itens de pedido (depende de orders e merchandises)
+    // 8. Criar pedidos (depende de sections)
+    const orders = await seedOrders(sections);
+
+    // 9. Criar itens de pedido (depende de orders e merchandises)
     const orderItems = await seedOrderItems(orders, merchandises);
 
     console.log("\n🎉 Seed completo executado com sucesso!");
@@ -487,6 +512,7 @@ async function seedAll() {
     console.log(`   - ${batches.length} lotes criados`);
     console.log(`   - ${merchandiseTypes.length} tipos de mercadoria criados`);
     console.log(`   - ${merchandises.length} mercadorias criadas`);
+    console.log(`   - ${sections.length} seções criadas`);
     console.log(`   - ${orders.length} pedidos criados`);
     console.log(`   - ${orderItems.length} itens de pedido criados`);
 
