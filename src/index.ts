@@ -1,4 +1,6 @@
 import express, { Request, Response } from "express";
+import swaggerUi from 'swagger-ui-express';
+import swaggerJsdoc from 'swagger-jsdoc';
 import cors from "cors";
 import { AppDataSource } from "./database/data-source";
 const firebase = require("../firebase/firebase.json");
@@ -11,6 +13,8 @@ import { getAuth } from "firebase/auth";
 import authRouter from "./routes/authRoutes";
 import stockRouter from "./routes/StockRoutes";
 import productRouter from "./routes/productRoutes";
+import orderRouter from "./routes/OrderRoutes";
+import sectionRouter from "./routes/SectionRoutes";
 
 const firebaseConfig = {
   apiKey: process.env.FIREBASE_API_KEY,
@@ -26,27 +30,42 @@ export const adminFirebase = admin.initializeApp({ credential: admin.credential.
 const firebaseApp = initializeApp(firebaseConfig);
 export const firebaseAuth = getAuth(firebaseApp);
 
-// CONFIGURAÇÕES GLOBAIS DAS ROTAS
+const swaggerOptions = {
+  definition: {
+    openapi: '3.0.0',
+    info: {
+      title: 'API 2025',
+      version: '1.0.0',
+      description: 'Documentação da API 2025',
+    },
+    servers: [
+      {
+        url: 'http://localhost:3000',
+      },
+    ],
+  },
+  apis: ['./src/routes/*.ts', './src/database/entities/*.ts'], // Ajuste conforme suas rotas
+};
+
+const swaggerSpec = swaggerJsdoc(swaggerOptions);
+
 const app = express();
 app.use(cors());
-
-// Middleware JSON para outras rotas
 app.use(express.json());
 
+// Swagger route
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
+
 app.use("/auth", authRouter);
-
-// Apatir daqui todas as rotas precisam de autenticação
 app.use(authMiddleware);
-
-// Rotas protegidas por autenticação
+app.use("/sections", sectionRouter);
+app.use("/orders", orderRouter);
 app.use("/products", productRouter);
 app.use("/stocks", stockRouter);
-
-// Middleware para tratamento de erros SystemError
 app.use(systemErrorHandler);
 
 AppDataSource.initialize()
   .then(() => {
-    app.listen(3000, () => console.log("API on http://localhost:3000"));
+    app.listen(3000, () => console.log("API on http://localhost:3000 \n Swagger on http://localhost:3000/api-docs "));
   })
   .catch((err) => console.error("Data Source init error:", err));

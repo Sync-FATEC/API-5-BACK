@@ -1,5 +1,6 @@
-import { Entity, PrimaryGeneratedColumn, Column, OneToMany } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, OneToMany, ManyToOne } from 'typeorm';
 import { OrderItem } from './OrderItem';
+import { Section } from './Section';
 
 @Entity()
 export class Order {
@@ -17,4 +18,7 @@ export class Order {
 
     @OneToMany(() => OrderItem, orderItem => orderItem.order)
     orderItems!: OrderItem[];
+
+    @ManyToOne(() => Section, section => section.orders)
+    section!: Section
 }

@@ -9,6 +9,7 @@ import { Order } from "./entities/Order";
 import { OrderItem } from "./entities/OrderItem";
 import { Stock } from "./entities/Stock";
 import { UserStock } from "./entities/UserStock";
+import { Section } from "./entities/Section";
 config();
 
 export const AppDataSource = new DataSource({
@@ -20,5 +21,5 @@ export const AppDataSource = new DataSource({
   database: process.env.DB_NAME,
   synchronize: true,
   logging: false,
-  entities: [User, Batch, Merchandise, MerchandiseType, Order, OrderItem, Stock, UserStock],
+  entities: [User, Batch, Merchandise, MerchandiseType, Order, OrderItem, Stock, UserStock, Section],
 });
