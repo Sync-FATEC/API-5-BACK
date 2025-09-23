@@ -375,7 +375,12 @@ async function seedSections() {
   const sections = [
     { name: "Almoxarifado" },
     { name: "Farmácia" },
-    { name: "Enfermaria" }
+    { name: "Enfermaria" },
+    { name: "Laboratório" },
+    { name: "Emergência" },
+    { name: "Administração" },
+    { name: "Logística" },
+    { name: "Manutenção" }
   ];
   const createdSections: Section[] = [];
   for (const sectionData of sections) {
@@ -414,6 +419,18 @@ async function seedOrders(sections: Section[]) {
       withdrawalDate: null,
       status: "PROCESSING",
       section: sections[2]
+    },
+    {
+      creationDate: new Date('2024-02-05'),
+      withdrawalDate: null,
+      status: "PENDING",
+      section: sections[3]
+    },
+    {
+      creationDate: new Date('2024-02-10'),
+      withdrawalDate: null,
+      status: "PROCESSING",
+      section: sections[4]
     }
   ];
   const createdOrders: Order[] = [];
@@ -449,6 +466,16 @@ async function seedOrderItems(orders: Order[], merchandises: Merchandise[]) {
       order: orders[2],
       merchandise: merchandises[2],
       quantity: 5
+    },
+    {
+      order: orders[3],
+      merchandise: merchandises[0],
+      quantity: 15
+    },
+    {
+      order: orders[4],
+      merchandise: merchandises[1],
+      quantity: 30
     }
   ];
 

@@ -1,14 +1,27 @@
 import { AppDataSource } from "../database/data-source";
+import { Batch } from "../database/entities/Batch";
 import { Merchandise } from "../database/entities/Merchandise";
 import { SystemError } from "../middlewares/SystemError";
 import { MerchandiseType } from "../types/ProductType";
 
 const repository = AppDataSource.getRepository(Merchandise);
+const batchRepository = AppDataSource.getRepository(Batch);
 
 export class MerchandiseRepository {
-    async create(merchandise: MerchandiseType) {
+    async create(merchandise: MerchandiseType, validDate: Date) {
         try {
-            const savedMerchandise = await repository.save(merchandise);
+            const batch = batchRepository.create({
+                expirationDate: validDate
+            });
+            const savedBatch = await batchRepository.save(batch);
+
+            const merchandiseWithBatch = {
+                ...merchandise,
+                batch: savedBatch,
+                batchId: savedBatch.id
+            };
+            const savedMerchandise = await repository.save(merchandiseWithBatch);
+
             return savedMerchandise;
         } catch (error) {
             console.error("Erro ao criar a mercadoria", error);

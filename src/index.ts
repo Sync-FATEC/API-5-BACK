@@ -14,6 +14,8 @@ import authRouter from "./routes/authRoutes";
 import stockRouter from "./routes/StockRoutes";
 import merchandiseRouter from "./routes/MerchandiseRoutes";
 import merchandiseTypeRouter from "./routes/MerchandiseTypeRoutes";
+import sectionRouter from "./routes/SectionRoutes";
+import orderRouter from "./routes/OrderRoutes";
 
 const firebaseConfig = {
   apiKey: process.env.FIREBASE_API_KEY,
@@ -59,6 +61,8 @@ app.use("/auth", authRouter);
 app.use(authMiddleware);
 
 // Rotas protegidas por autenticação
+app.use("/sections", sectionRouter);
+app.use("/orders", orderRouter);
 app.use("/merchandise", merchandiseRouter);
 app.use("/merchandise-types", merchandiseTypeRouter);
 app.use("/stocks", stockRouter);
