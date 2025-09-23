@@ -12,10 +12,8 @@ import { getAuth } from "firebase/auth";
 
 import authRouter from "./routes/authRoutes";
 import stockRouter from "./routes/StockRoutes";
-import productRouter from "./routes/productRoutes";
-import orderRouter from "./routes/OrderRoutes";
-import sectionRouter from "./routes/SectionRoutes";
-import productTypeRouter from "./routes/productTypeRoutes";
+import merchandiseRouter from "./routes/MerchandiseRoutes";
+import merchandiseTypeRouter from "./routes/MerchandiseTypeRoutes";
 
 const firebaseConfig = {
   apiKey: process.env.FIREBASE_API_KEY,
@@ -59,10 +57,10 @@ app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
 app.use("/auth", authRouter);
 app.use(authMiddleware);
-app.use("/sections", sectionRouter);
-app.use("/orders", orderRouter);
-app.use("/products", productRouter);
-app.use("/product-types", productTypeRouter);
+
+// Rotas protegidas por autenticação
+app.use("/merchandise", merchandiseRouter);
+app.use("/merchandise-types", merchandiseTypeRouter);
 app.use("/stocks", stockRouter);
 app.use(systemErrorHandler);
 
