@@ -3,7 +3,7 @@ import { Section } from '../database/entities/Section';
 
 export class SectionService {
   async getAll(): Promise<Section[]> {
-    return await SectionRepository.find({ relations: ['orders'] });
+    return await SectionRepository.find();
   }
 
   async getById(id: string): Promise<Section | null> {
@@ -23,7 +23,7 @@ export class SectionService {
   }
 
   async delete(id: string): Promise<boolean> {
-    const result = await SectionRepository.delete(id);
+    const result = await SectionRepository.update(id, { isActive: false });
     return result.affected !== 0;
   }
 }

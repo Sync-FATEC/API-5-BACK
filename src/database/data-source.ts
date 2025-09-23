@@ -21,5 +21,5 @@ export const AppDataSource = new DataSource({
   database: process.env.DB_NAME,
   synchronize: true,
   logging: false,
-  entities: [User, Batch, Merchandise, MerchandiseType, Order, OrderItem, Stock, UserStock],
+  entities: [User, Batch, Merchandise, MerchandiseType, Order, OrderItem, Stock, UserStock, Section],
 });

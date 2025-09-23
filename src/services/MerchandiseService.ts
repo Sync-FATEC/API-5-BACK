@@ -8,7 +8,7 @@ const merchandiseRepository = new MerchandiseRepository();
 const merchandiseTypeRepository = new MerchandiseTypeRepository();
 
 export class MerchandiseService {
-    async createMerchandise(merchandise: MerchandiseType) {
+    async createMerchandise(merchandise: MerchandiseType, validDate: Date) {
         try {
             // Validar se o tipo de mercadoria existe
             await merchandiseTypeRepository.getById(merchandise.typeId);
@@ -17,7 +17,7 @@ export class MerchandiseService {
                 throw new SystemError("A quantidade não pode ser negativa");
             }
 
-            const savedMerchandise = await merchandiseRepository.create(merchandise);
+            const savedMerchandise = await merchandiseRepository.create(merchandise, validDate);
             return savedMerchandise;
         } catch (error) {
             console.error("Erro no serviço de criação de mercadoria:", error);

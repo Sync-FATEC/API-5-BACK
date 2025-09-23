@@ -10,20 +10,20 @@ const merchandiseService = new MerchandiseService();
 export class MerchandiseController {
     async create(req: Request, res: Response, next: NextFunction) {
         try {
-            const { batchId, typeId, quantity, status } = req.body;
+            const { typeId, quantity, status, validDate } = req.body;
 
-            if (!batchId || !typeId || quantity === undefined || !status) {
-                throw new SystemError("Dados incompletos. BatchId, typeId, quantity e status são obrigatórios.");
+            if (!typeId || quantity === undefined || !status || !validDate) {
+                throw new SystemError("Dados incompletos. typeId, quantity, status e validDate são obrigatórios.");
             }
 
             const merchandiseData: MerchandiseType = {
-                batchId,
                 typeId,
                 quantity: Number(quantity),
                 status: status as MerchandiseStatus
             };
 
-            const merchandise = await merchandiseService.createMerchandise(merchandiseData);
+            const merchandise = await merchandiseService.createMerchandise(merchandiseData, validDate);
+
             res.status(201).json({
                 success: true,
                 data: merchandise,
@@ -69,19 +69,18 @@ export class MerchandiseController {
     async update(req: Request, res: Response, next: NextFunction) {
         try {
             const { id } = req.params;
-            const { batchId, typeId, quantity, status } = req.body;
+            const { typeId, quantity, status } = req.body;
 
             if (!id) {
                 throw new SystemError("ID da mercadoria é obrigatório");
             }
 
-            if (!batchId && !typeId && quantity === undefined && !status) {
+            if (!typeId && quantity === undefined && !status) {
                 throw new SystemError("Nenhum dado fornecido para atualização");
             }
 
             const merchandiseData: Partial<MerchandiseType> = {};
             
-            if (batchId) merchandiseData.batchId = batchId;
             if (typeId) merchandiseData.typeId = typeId;
             if (quantity !== undefined) merchandiseData.quantity = Number(quantity);
             if (status) merchandiseData.status = status as MerchandiseStatus;
