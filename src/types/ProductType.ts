@@ -1,11 +1,9 @@
-export type ProductType = {
+import { MerchandiseStatus } from "../database/entities/Merchandise";
+
+export type MerchandiseType = {
     id?: string;
-    name: string;
-    fichNumber: string;
+    batchId: string;
+    typeId: string;
     quantity: number;
-    minimumStock: number;
-    unitOfMeasure: string;
-    group: string;
-    productTypeId: string;
-    isActive?: boolean;
+    status: MerchandiseStatus;
 }

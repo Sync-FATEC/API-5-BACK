@@ -1,10 +1,11 @@
-export type ProductTypeType = {
+import { MerchandiseGroup } from "../database/enums/MerchandiseGroup";
+
+export type MerchandiseTypeType = {
     id?: string;
     name: string;
-    numeroFichas: string;
-    unidadeMedida: string;
-    controlada: boolean;
-    estoqueMinimo: number;
-    description?: string;
-    isActive?: boolean;
+    recordNumber: string;
+    unitOfMeasure: string;
+    controlled: boolean;
+    group: MerchandiseGroup;
+    minimumStock: number;
 }
