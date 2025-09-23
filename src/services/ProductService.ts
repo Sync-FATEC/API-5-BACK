@@ -1,13 +1,18 @@
 import { SystemError } from "../middlewares/SystemError";
 import { ProductRepository } from "../repository/ProductRepository";
+import { ProductTypeRepository } from "../repository/ProductTypeRepository";
 import { ProductType } from "../types/ProductType";
 import { RoleEnum } from "../database/enums/RoleEnum";
 
 const productRepository = new ProductRepository();
+const productTypeRepository = new ProductTypeRepository();
 
 export class ProductService {
     async createProduct(product: ProductType) {
         try {
+            // Validar se o tipo de produto existe
+            await productTypeRepository.getById(product.productTypeId);
+            
             await productRepository.isValidFichNumber(product.fichNumber);
             
             if (product.quantity < 0) {
@@ -46,6 +51,11 @@ export class ProductService {
 
     async updateProduct(id: string, productData: Partial<ProductType>) {
         try {
+            // Validar se o tipo de produto existe (se estiver sendo alterado)
+            if (productData.productTypeId) {
+                await productTypeRepository.getById(productData.productTypeId);
+            }
+            
             if (productData.fichNumber) {
                 await productRepository.isValidFichNumber(productData.fichNumber, id);
             }

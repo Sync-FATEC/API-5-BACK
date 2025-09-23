@@ -19,7 +19,8 @@ export class ProductRepository {
     async getById(id: string) {
         try {
             const product = await repository.findOne({
-                where: { id }
+                where: { id },
+                relations: ['productType']
             });
 
             if (!product) {
@@ -36,7 +37,8 @@ export class ProductRepository {
     async listAll() {
         try {
             return await repository.find({
-                where: { isActive: true }
+                where: { isActive: true },
+                relations: ['productType']
             });
         } catch (error) {
             console.error("Erro ao listar produtos", error);
