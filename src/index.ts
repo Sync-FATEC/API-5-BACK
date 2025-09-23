@@ -15,6 +15,7 @@ import stockRouter from "./routes/StockRoutes";
 import productRouter from "./routes/productRoutes";
 import orderRouter from "./routes/OrderRoutes";
 import sectionRouter from "./routes/SectionRoutes";
+import productTypeRouter from "./routes/productTypeRoutes";
 
 const firebaseConfig = {
   apiKey: process.env.FIREBASE_API_KEY,
@@ -61,6 +62,7 @@ app.use(authMiddleware);
 app.use("/sections", sectionRouter);
 app.use("/orders", orderRouter);
 app.use("/products", productRouter);
+app.use("/product-types", productTypeRouter);
 app.use("/stocks", stockRouter);
 app.use(systemErrorHandler);
 

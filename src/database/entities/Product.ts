@@ -1,4 +1,5 @@
-import { Column, Entity, PrimaryGeneratedColumn } from "typeorm";
+import { Column, Entity, PrimaryGeneratedColumn, ManyToOne, JoinColumn } from "typeorm";
+import { ProductType } from "./ProductType";
 
 @Entity()
 export class Product {
@@ -31,4 +32,12 @@ export class Product {
 
     @Column({ type: "boolean", default: true })
     isActive!: boolean
+
+    // Relacionamento: Muitos produtos pertencem a um tipo de produto
+    @ManyToOne(() => ProductType, productType => productType.products)
+    @JoinColumn({ name: 'productTypeId' })
+    productType!: ProductType
+
+    @Column({ type: 'varchar' })
+    productTypeId!: string
 }

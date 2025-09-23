@@ -9,10 +9,10 @@ const productService = new ProductService();
 export class ProductController {
     async create(req: Request, res: Response, next: NextFunction) {
         try {
-            const { name, fichNumber, quantity, minimumStock, unitOfMeasure, group } = req.body;
+            const { name, fichNumber, quantity, minimumStock, unitOfMeasure, group, productTypeId, validDate } = req.body;
 
-            if (!name || !fichNumber || quantity === undefined || minimumStock === undefined || !unitOfMeasure || !group) {
-                throw new SystemError("Dados incompletos");
+            if (!name || !fichNumber || quantity === undefined || minimumStock === undefined || !unitOfMeasure || !group || !productTypeId || !validDate) {
+                throw new SystemError("Dados incompletos. Todos os campos são obrigatórios, incluindo o tipo de produto.");
             }
 
             const productData: ProductType = {
@@ -21,10 +21,11 @@ export class ProductController {
                 quantity: Number(quantity),
                 minimumStock: Number(minimumStock),
                 unitOfMeasure,
-                group
+                group,
+                productTypeId
             };
 
-            const product = await productService.createProduct(productData);
+            const product = await productService.createProduct(productData, validDate);
             res.status(201).json({
                 success: true,
                 data: product,
@@ -70,13 +71,13 @@ export class ProductController {
     async update(req: Request, res: Response, next: NextFunction) {
         try {
             const { id } = req.params;
-            const { name, fichNumber, quantity, minimumStock, unitOfMeasure, group } = req.body;
+            const { name, fichNumber, quantity, minimumStock, unitOfMeasure, group, productTypeId } = req.body;
 
             if (!id) {
                 throw new SystemError("ID do produto é obrigatório");
             }
 
-            if (!name && !fichNumber && quantity === undefined && minimumStock === undefined && !unitOfMeasure && !group) {
+            if (!name && !fichNumber && quantity === undefined && minimumStock === undefined && !unitOfMeasure && !group && !productTypeId) {
                 throw new SystemError("Nenhum dado fornecido para atualização");
             }
 
@@ -88,6 +89,7 @@ export class ProductController {
             if (minimumStock !== undefined) productData.minimumStock = Number(minimumStock);
             if (unitOfMeasure) productData.unitOfMeasure = unitOfMeasure;
             if (group) productData.group = group;
+            if (productTypeId) productData.productTypeId = productTypeId;
 
             const updatedProduct = await productService.updateProduct(id, productData);
             res.status(200).json({

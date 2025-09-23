@@ -6,5 +6,6 @@ export type ProductType = {
     minimumStock: number;
     unitOfMeasure: string;
     group: string;
+    productTypeId: string;
     isActive?: boolean;
 }
