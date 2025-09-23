@@ -1,15 +1,23 @@
 import { AppDataSource } from "../database/data-source";
+import { Batch } from "../database/entities/Batch";
 import { Product } from "../database/entities/Product";
 import { SystemError } from "../middlewares/SystemError";
 import { ProductType } from "../types/ProductType";
 
 const repository = AppDataSource.getRepository(Product);
+const batchRepository = AppDataSource.getRepository(Batch);
 
 export class ProductRepository {
-    async create(product: ProductType) {
+    async create(product: ProductType, validDate: Date) {
         try {
             const savedProduct = await repository.save(product);
-            return savedProduct;
+
+            const batch = await batchRepository.save({
+                expirationDate: validDate,
+                product: savedProduct
+            });
+
+            return {savedProduct, batch};
         } catch (error) {
             console.error("Erro ao criar o produto", error);
             throw error;

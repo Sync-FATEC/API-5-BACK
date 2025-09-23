@@ -8,7 +8,7 @@ const productRepository = new ProductRepository();
 const productTypeRepository = new ProductTypeRepository();
 
 export class ProductService {
-    async createProduct(product: ProductType) {
+    async createProduct(product: ProductType, validDate: Date) {
         try {
             // Validar se o tipo de produto existe
             await productTypeRepository.getById(product.productTypeId);
@@ -23,7 +23,7 @@ export class ProductService {
                 throw new SystemError("O estoque mínimo não pode ser negativo");
             }
 
-            const savedProduct = await productRepository.create(product);
+            const savedProduct = await productRepository.create(product, validDate);
             return savedProduct;
         } catch (error) {
             console.error("Erro no serviço de criação de produto:", error);

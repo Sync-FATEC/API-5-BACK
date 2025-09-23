@@ -9,9 +9,9 @@ const productService = new ProductService();
 export class ProductController {
     async create(req: Request, res: Response, next: NextFunction) {
         try {
-            const { name, fichNumber, quantity, minimumStock, unitOfMeasure, group, productTypeId } = req.body;
+            const { name, fichNumber, quantity, minimumStock, unitOfMeasure, group, productTypeId, validDate } = req.body;
 
-            if (!name || !fichNumber || quantity === undefined || minimumStock === undefined || !unitOfMeasure || !group || !productTypeId) {
+            if (!name || !fichNumber || quantity === undefined || minimumStock === undefined || !unitOfMeasure || !group || !productTypeId || !validDate) {
                 throw new SystemError("Dados incompletos. Todos os campos são obrigatórios, incluindo o tipo de produto.");
             }
 
@@ -25,7 +25,7 @@ export class ProductController {
                 productTypeId
             };
 
-            const product = await productService.createProduct(productData);
+            const product = await productService.createProduct(productData, validDate);
             res.status(201).json({
                 success: true,
                 data: product,
