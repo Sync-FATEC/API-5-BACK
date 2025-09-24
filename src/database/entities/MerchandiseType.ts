@@ -16,6 +16,9 @@ export class MerchandiseType {
     @Column()
     unitOfMeasure!: string;
 
+    @Column({ default: 0 })
+    quantityTotal!: number;
+
     @Column()
     controlled!: boolean;
 

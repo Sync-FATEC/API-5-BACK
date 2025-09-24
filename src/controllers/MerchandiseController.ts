@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from "express";
-import { MerchandiseType } from "../types/ProductType";
+import { MerchandiseTypeEnum } from "../types/ProductType";
 import { SystemError } from "../middlewares/SystemError";
 import { MerchandiseService } from "../services/MerchandiseService";
 import { MerchandiseStatus } from "../database/entities/Merchandise";
@@ -16,7 +16,7 @@ export class MerchandiseController {
                 throw new SystemError("Dados incompletos. typeId, quantity, status e validDate são obrigatórios.");
             }
 
-            const merchandiseData: MerchandiseType = {
+            const merchandiseData: MerchandiseTypeEnum = {
                 typeId,
                 quantity: Number(quantity),
                 status: status as MerchandiseStatus
@@ -79,7 +79,7 @@ export class MerchandiseController {
                 throw new SystemError("Nenhum dado fornecido para atualização");
             }
 
-            const merchandiseData: Partial<MerchandiseType> = {};
+            const merchandiseData: Partial<MerchandiseTypeEnum> = {};
             
             if (typeId) merchandiseData.typeId = typeId;
             if (quantity !== undefined) merchandiseData.quantity = Number(quantity);
