@@ -2,15 +2,13 @@ import { OrderRepository } from '../repository/OrderRepository';
 import { Order } from '../database/entities/Order';
 import { OrderItem } from '../database/entities/OrderItem';
 import { Section } from '../database/entities/Section';
-import { Merchandise } from '../database/entities/Merchandise';
 import { MerchandiseType } from '../database/entities/MerchandiseType';
-import { SectionRepository } from '../repository/SectionRepository';
 import { OrderDTO, OrderItemDTO, OrderViewModel } from '../types/OrderSectionDTO';
 import { AppDataSource } from '../database/data-source';
 
 export class OrderService {
 		async getAll(): Promise<OrderViewModel[]> {
-			const orders = await OrderRepository.find({ relations: ['orderItems', 'orderItems.merchandise', 'orderItems.merchandise.type', 'section'] });
+			const orders = await OrderRepository.find({ relations: ['orderItems', 'orderItems.merchandise', 'section'] });
 
 			console.log(orders)
 
@@ -25,13 +23,13 @@ export class OrderService {
 					id: item.id,
 					quantity: item.quantity,
 					merchandiseId: item.merchandise?.id ?? '',
-					merchandiseName: item.merchandise.type.name
+					merchandiseName: item.merchandise.name
 				}))
 			}));
 		}
 
 		async getById(id: string): Promise<OrderViewModel | null> {
-			const order = await OrderRepository.findOne({ where: { id }, relations: ['orderItems', 'orderItems.merchandise', 'orderItems.merchandise.type', 'section'] });
+			const order = await OrderRepository.findOne({ where: { id }, relations: ['orderItems', 'orderItems.merchandise', 'section'] });
 			if (!order) return null;
 			return {
 				id: order.id,
@@ -44,7 +42,7 @@ export class OrderService {
 					id: item.id,
 					quantity: item.quantity,
 					merchandiseId: item.merchandise?.id ?? '',
-					merchandiseName: item.merchandise.type.name
+					merchandiseName: item.merchandise.name
 				}))
 			};
 		}
@@ -54,30 +52,28 @@ export class OrderService {
 		const section = await AppDataSource.getRepository(Section).findOne({ where: { id: orderData.sectionId } });
 		if (!section) throw new Error('Section not found');
 
-		// Buscar Merchandise e criar OrderItems com validação de estoque
+		// Buscar MerchandiseType e criar OrderItems com validação de estoque
 		const orderItems: OrderItem[] = [];
-		const merchandiseRepository = AppDataSource.getRepository(Merchandise);
 		const merchandiseTypeRepository = AppDataSource.getRepository(MerchandiseType);
 
 		for (const itemDTO of orderData.orderItems) {
-			const merchandise = await merchandiseRepository.findOne({ 
-				where: { id: itemDTO.merchandiseId },
-				relations: ['type']
+			const merchandiseType = await merchandiseTypeRepository.findOne({ 
+				where: { id: itemDTO.merchandiseId }
 			});
-			if (!merchandise) throw new Error(`Merchandise not found: ${itemDTO.merchandiseId}`);
+			if (!merchandiseType) throw new Error(`MerchandiseType not found: ${itemDTO.merchandiseId}`);
 
 			// Verificar se há quantidade suficiente no tipo de mercadoria
-			if (merchandise.type.quantityTotal < itemDTO.quantity) {
-				throw new Error(`Estoque total insuficiente para o tipo ${merchandise.type.name}. Disponível: ${merchandise.type.quantityTotal}, Solicitado: ${itemDTO.quantity}`);
+			if (merchandiseType.quantityTotal < itemDTO.quantity) {
+				throw new Error(`Estoque total insuficiente para o tipo ${merchandiseType.name}. Disponível: ${merchandiseType.quantityTotal}, Solicitado: ${itemDTO.quantity}`);
 			}
 
 			// Diminuir quantidade total do tipo de mercadoria
-			merchandise.type.quantityTotal -= itemDTO.quantity;
-			await merchandiseTypeRepository.save(merchandise.type);
+			merchandiseType.quantityTotal -= itemDTO.quantity;
+			await merchandiseTypeRepository.save(merchandiseType);
 
 			const orderItem = new OrderItem();
 			orderItem.quantity = itemDTO.quantity;
-			orderItem.merchandise = merchandise;
+			orderItem.merchandise = merchandiseType;
 			orderItems.push(orderItem);
 		}
 
@@ -122,7 +118,7 @@ export class OrderService {
 			// Atualizar OrderItems
 			order.orderItems = [];
 			for (const itemDTO of orderData.orderItems) {
-				const merchandise = await AppDataSource.getRepository(Merchandise).findOne({ where: { id: itemDTO.merchandiseId } });
+				const merchandise = await AppDataSource.getRepository(MerchandiseType).findOne({ where: { id: itemDTO.merchandiseId } });
 				if (!merchandise) throw new Error(`Merchandise not found: ${itemDTO.merchandiseId}`);
 				const orderItem = new OrderItem();
 				orderItem.quantity = itemDTO.quantity;
