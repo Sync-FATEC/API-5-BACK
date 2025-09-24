@@ -1,6 +1,7 @@
 import { Entity, PrimaryGeneratedColumn, Column, OneToMany } from 'typeorm';
 import { Merchandise } from './Merchandise';
 import { MerchandiseGroup } from '../enums/MerchandiseGroup';
+import { OrderItem } from './OrderItem';
 
 @Entity()
 export class MerchandiseType {
@@ -16,6 +17,9 @@ export class MerchandiseType {
     @Column()
     unitOfMeasure!: string;
 
+    @Column({ default: 0 })
+    quantityTotal!: number;
+
     @Column()
     controlled!: boolean;
 
@@ -27,4 +31,7 @@ export class MerchandiseType {
 
     @OneToMany(() => Merchandise, merchandise => merchandise.type)
     merchandises!: Merchandise[];
+
+    @OneToMany(() => OrderItem, orderItem => orderItem.merchandise)
+    orderItems!: OrderItem[];
 }

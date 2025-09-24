@@ -1,16 +1,15 @@
 import { SystemError } from "../middlewares/SystemError";
 import { MerchandiseRepository } from "../repository/MerchandiseRepository";
 import { MerchandiseTypeRepository } from "../repository/MerchandiseTypeRepository";
-import { MerchandiseType } from "../types/ProductType";
+import { MerchandiseTypeEnum } from "../types/ProductType";
 import { RoleEnum } from "../database/enums/RoleEnum";
 
 const merchandiseRepository = new MerchandiseRepository();
 const merchandiseTypeRepository = new MerchandiseTypeRepository();
 
 export class MerchandiseService {
-    async createMerchandise(merchandise: MerchandiseType, validDate: Date) {
+    async createMerchandise(merchandise: MerchandiseTypeEnum, validDate: Date) {
         try {
-            // Validar se o tipo de mercadoria existe
             await merchandiseTypeRepository.getById(merchandise.typeId);
             
             if (merchandise.quantity < 0) {
@@ -43,7 +42,7 @@ export class MerchandiseService {
         }
     }
 
-    async updateMerchandise(id: string, merchandiseData: Partial<MerchandiseType>) {
+    async updateMerchandise(id: string, merchandiseData: Partial<MerchandiseTypeEnum>) {
         try {
             // Validar se o tipo de mercadoria existe (se estiver sendo alterado)
             if (merchandiseData.typeId) {
