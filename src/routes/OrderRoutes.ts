@@ -13,6 +13,12 @@ const orderController = new OrderController();
  *     responses:
  *       200:
  *         description: Lista de pedidos
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 $ref: '#/components/schemas/Order'
  */
 router.get('/', (req, res) => orderController.getAll(req, res));
 /**
@@ -27,9 +33,15 @@ router.get('/', (req, res) => orderController.getAll(req, res));
  *         required: true
  *         schema:
  *           type: string
+ *           format: uuid
+ *         description: ID do pedido
  *     responses:
  *       200:
  *         description: Pedido encontrado
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Order'
  *       404:
  *         description: Pedido não encontrado
  */
@@ -45,10 +57,46 @@ router.get('/:id', (req, res) => orderController.getById(req, res));
  *       content:
  *         application/json:
  *           schema:
- *             $ref: '#/components/schemas/Order'
+ *             type: object
+ *             required:
+ *               - sectionId
+ *               - orderItems
+ *             properties:
+ *               sectionId:
+ *                 type: string
+ *                 format: uuid
+ *                 example: "section-uuid-123"
+ *               withdrawalDate:
+ *                 type: string
+ *                 format: date
+ *                 example: "2024-01-15"
+ *               status:
+ *                 type: string
+ *                 example: "PENDENTE"
+ *               orderItems:
+ *                 type: array
+ *                 items:
+ *                   type: object
+ *                   required:
+ *                     - merchandiseId
+ *                     - quantity
+ *                   properties:
+ *                     merchandiseId:
+ *                       type: string
+ *                       format: uuid
+ *                       example: "merchandise-uuid-123"
+ *                     quantity:
+ *                       type: number
+ *                       example: 5
  *     responses:
  *       201:
- *         description: Pedido criado
+ *         description: Pedido criado com sucesso
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Order'
+ *       400:
+ *         description: Dados inválidos
  */
 router.post('/', (req, res) => orderController.create(req, res));
 /**
@@ -63,17 +111,49 @@ router.post('/', (req, res) => orderController.create(req, res));
  *         required: true
  *         schema:
  *           type: string
+ *           format: uuid
+ *         description: ID do pedido
  *     requestBody:
  *       required: true
  *       content:
  *         application/json:
  *           schema:
- *             $ref: '#/components/schemas/Order'
+ *             type: object
+ *             properties:
+ *               sectionId:
+ *                 type: string
+ *                 format: uuid
+ *                 example: "section-uuid-123"
+ *               withdrawalDate:
+ *                 type: string
+ *                 format: date
+ *                 example: "2024-01-15"
+ *               status:
+ *                 type: string
+ *                 example: "PENDENTE"
+ *               orderItems:
+ *                 type: array
+ *                 items:
+ *                   type: object
+ *                   properties:
+ *                     merchandiseId:
+ *                       type: string
+ *                       format: uuid
+ *                       example: "merchandise-uuid-123"
+ *                     quantity:
+ *                       type: number
+ *                       example: 5
  *     responses:
  *       200:
- *         description: Pedido atualizado
+ *         description: Pedido atualizado com sucesso
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Order'
  *       404:
  *         description: Pedido não encontrado
+ *       400:
+ *         description: Dados inválidos
  */
 router.put('/:id', (req, res) => orderController.update(req, res));
 /**
@@ -88,9 +168,11 @@ router.put('/:id', (req, res) => orderController.update(req, res));
  *         required: true
  *         schema:
  *           type: string
+ *           format: uuid
+ *         description: ID do pedido
  *     responses:
  *       204:
- *         description: Pedido removido
+ *         description: Pedido removido com sucesso
  *       404:
  *         description: Pedido não encontrado
  */
