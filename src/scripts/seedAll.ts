@@ -261,11 +261,20 @@ async function seedMerchandiseTypes() {
   console.log("=== Criando Tipos de Mercadoria ===");
   const merchandiseTypeRepository = AppDataSource.getRepository(MerchandiseType);
 
-  const merchandiseTypes = [
+  const merchandiseTypes: Array<{
+    name: string;
+    recordNumber: string;
+    unitOfMeasure: string;
+    quantityTotal: number;
+    controlled: boolean;
+    group: MerchandiseGroup;
+    minimumStock: number;
+  }> = [
     {
       name: "Medicamento Analgésico",
       recordNumber: "MED001",
       unitOfMeasure: "Comprimido",
+      quantityTotal: 500,
       controlled: true,
       group: MerchandiseGroup.Medical,
       minimumStock: 100
@@ -274,6 +283,7 @@ async function seedMerchandiseTypes() {
       name: "Material de Escritório",
       recordNumber: "ALM001",
       unitOfMeasure: "Unidade",
+      quantityTotal: 200,
       controlled: false,
       group: MerchandiseGroup.Almox,
       minimumStock: 50
@@ -282,6 +292,7 @@ async function seedMerchandiseTypes() {
       name: "Equipamento Médico",
       recordNumber: "MED002",
       unitOfMeasure: "Peça",
+      quantityTotal: 25,
       controlled: true,
       group: MerchandiseGroup.Medical,
       minimumStock: 10
@@ -305,6 +316,7 @@ async function seedMerchandiseTypes() {
     merchandiseType.name = typeData.name;
     merchandiseType.recordNumber = typeData.recordNumber;
     merchandiseType.unitOfMeasure = typeData.unitOfMeasure;
+    merchandiseType.quantityTotal = typeData.quantityTotal;
     merchandiseType.controlled = typeData.controlled;
     merchandiseType.group = typeData.group;
     merchandiseType.minimumStock = typeData.minimumStock;
@@ -447,34 +459,34 @@ async function seedOrders(sections: Section[]) {
   return createdOrders;
 }
 
-async function seedOrderItems(orders: Order[], merchandises: Merchandise[]) {
+async function seedOrderItems(orders: Order[], merchandiseTypes: MerchandiseType[]) {
   console.log("=== Criando Itens de Pedido ===");
   const orderItemRepository = AppDataSource.getRepository(OrderItem);
 
   const orderItems = [
     {
       order: orders[0],
-      merchandise: merchandises[0],
+      merchandise: merchandiseTypes[0],
       quantity: 50
     },
     {
       order: orders[1],
-      merchandise: merchandises[1],
+      merchandise: merchandiseTypes[1],
       quantity: 25
     },
     {
       order: orders[2],
-      merchandise: merchandises[2],
+      merchandise: merchandiseTypes[2],
       quantity: 5
     },
     {
       order: orders[3],
-      merchandise: merchandises[0],
+      merchandise: merchandiseTypes[0],
       quantity: 15
     },
     {
       order: orders[4],
-      merchandise: merchandises[1],
+      merchandise: merchandiseTypes[1],
       quantity: 30
     }
   ];
@@ -490,7 +502,7 @@ async function seedOrderItems(orders: Order[], merchandises: Merchandise[]) {
     const savedOrderItem = await orderItemRepository.save(orderItem);
     createdOrderItems.push(savedOrderItem);
 
-    console.log(`Item de pedido criado: ${itemData.merchandise.type.name} - Qtd: ${itemData.quantity}`);
+    console.log(`Item de pedido criado: ${itemData.merchandise.name} - Qtd: ${itemData.quantity}`);
   }
 
   return createdOrderItems;
@@ -528,8 +540,8 @@ async function seedAll() {
     // 8. Criar pedidos (depende de sections)
     const orders = await seedOrders(sections);
 
-    // 9. Criar itens de pedido (depende de orders e merchandises)
-    const orderItems = await seedOrderItems(orders, merchandises);
+    // 9. Criar itens de pedido (depende de orders e merchandiseTypes)
+    const orderItems = await seedOrderItems(orders, merchandiseTypes);
 
     console.log("\n🎉 Seed completo executado com sucesso!");
     console.log("📊 Resumo:");

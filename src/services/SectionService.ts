@@ -3,7 +3,7 @@ import { Section } from '../database/entities/Section';
 
 export class SectionService {
   async getAll(): Promise<Section[]> {
-    return await SectionRepository.find();
+    return await SectionRepository.find({ where: { isActive: true } });
   }
 
   async getById(id: string): Promise<Section | null> {

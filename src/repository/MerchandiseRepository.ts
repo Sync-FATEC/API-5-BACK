@@ -1,14 +1,16 @@
 import { AppDataSource } from "../database/data-source";
 import { Batch } from "../database/entities/Batch";
 import { Merchandise } from "../database/entities/Merchandise";
+import { MerchandiseType } from "../database/entities/MerchandiseType";
 import { SystemError } from "../middlewares/SystemError";
-import { MerchandiseType } from "../types/ProductType";
+import { MerchandiseTypeEnum } from "../types/ProductType";
 
 const repository = AppDataSource.getRepository(Merchandise);
 const batchRepository = AppDataSource.getRepository(Batch);
+const merchandiseTypeRepository = AppDataSource.getRepository(MerchandiseType);
 
 export class MerchandiseRepository {
-    async create(merchandise: MerchandiseType, validDate: Date) {
+    async create(merchandise: MerchandiseTypeEnum, validDate: Date) {
         try {
             const batch = batchRepository.create({
                 expirationDate: validDate
@@ -21,6 +23,16 @@ export class MerchandiseRepository {
                 batchId: savedBatch.id
             };
             const savedMerchandise = await repository.save(merchandiseWithBatch);
+
+            const currentMerchandiseType = await merchandiseTypeRepository.findOne({
+                where: { id: merchandise.typeId }
+            });
+
+            if (currentMerchandiseType) {
+                await merchandiseTypeRepository.update(merchandise.typeId, {
+                    quantityTotal: currentMerchandiseType.quantityTotal + merchandise.quantity
+                });
+            }
 
             return savedMerchandise;
         } catch (error) {
@@ -58,7 +70,7 @@ export class MerchandiseRepository {
         }
     }
 
-    async update(id: string, merchandiseData: Partial<MerchandiseType>) {
+    async update(id: string, merchandiseData: Partial<MerchandiseTypeEnum>) {
         try {
             const merchandise = await this.getById(id);
 

@@ -13,6 +13,12 @@ const sectionController = new SectionController();
  *     responses:
  *       200:
  *         description: Lista de seções
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 $ref: '#/components/schemas/Section'
  */
 router.get('/', (req, res) => sectionController.getAll(req, res));
 
@@ -28,9 +34,15 @@ router.get('/', (req, res) => sectionController.getAll(req, res));
  *         required: true
  *         schema:
  *           type: string
+ *           format: uuid
+ *         description: ID da seção
  *     responses:
  *       200:
  *         description: Seção encontrada
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Section'
  *       404:
  *         description: Seção não encontrada
  */
@@ -47,10 +59,22 @@ router.get('/:id', (req, res) => sectionController.getById(req, res));
  *       content:
  *         application/json:
  *           schema:
- *             $ref: '#/components/schemas/Section'
+ *             type: object
+ *             required:
+ *               - name
+ *             properties:
+ *               name:
+ *                 type: string
+ *                 example: "Almoxarifado"
  *     responses:
  *       201:
- *         description: Seção criada
+ *         description: Seção criada com sucesso
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Section'
+ *       400:
+ *         description: Dados inválidos
  */
 router.post('/', (req, res) => sectionController.create(req, res));
 
@@ -66,17 +90,29 @@ router.post('/', (req, res) => sectionController.create(req, res));
  *         required: true
  *         schema:
  *           type: string
+ *           format: uuid
+ *         description: ID da seção
  *     requestBody:
  *       required: true
  *       content:
  *         application/json:
  *           schema:
- *             $ref: '#/components/schemas/Section'
+ *             type: object
+ *             properties:
+ *               name:
+ *                 type: string
+ *                 example: "Almoxarifado"
  *     responses:
  *       200:
- *         description: Seção atualizada
+ *         description: Seção atualizada com sucesso
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Section'
  *       404:
  *         description: Seção não encontrada
+ *       400:
+ *         description: Dados inválidos
  */
 router.put('/:id', (req, res) => sectionController.update(req, res));
 
@@ -92,9 +128,11 @@ router.put('/:id', (req, res) => sectionController.update(req, res));
  *         required: true
  *         schema:
  *           type: string
+ *           format: uuid
+ *         description: ID da seção
  *     responses:
  *       204:
- *         description: Seção removida
+ *         description: Seção removida com sucesso
  *       404:
  *         description: Seção não encontrada
  */

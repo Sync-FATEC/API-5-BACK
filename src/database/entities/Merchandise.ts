@@ -35,7 +35,4 @@ export class Merchandise {
 
     @ManyToOne(() => Stock, stock => stock.merchandises)
     stock!: Stock;
-
-    @OneToMany(() => OrderItem, orderItem => orderItem.merchandise)
-    orderItems!: OrderItem[];
 }
