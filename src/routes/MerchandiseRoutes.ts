@@ -30,26 +30,6 @@ const router = Router();
  */
 router.get("/", AuthMiddleware.requireRole(RoleEnum.SOLDADO), merchandiseController.listAll);
 
-/**
- * @swagger
- * /merchandise/stock-alerts:
- *   get:
- *    summary: Obtém alertas de estoque
- *   tags: [Merchandise]
- *  security:
- *      - bearerAuth: []
- *    responses:
- *     200:
- *      description: Alertas de estoque
- *     content:
- *      application/json:
- *      schema:
- *      $ref: '#/components/schemas/StockAlertSummary'
- *    401:
- *    description: Não autorizado
- *   403:
- *   description: Acesso negado - Requer role SOLDADO ou superior
- */
 router.get("/stock-alerts", AuthMiddleware.requireRole(RoleEnum.SOLDADO), merchandiseController.getStockAlerts);
 
 /**
