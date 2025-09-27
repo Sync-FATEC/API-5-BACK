@@ -94,4 +94,28 @@ export class MerchandiseRepository {
             throw error;
         }
     }
+
+    async getStockAlerts() {
+        try {
+            const query = `
+                SELECT 
+                    mt.id as "typeId",
+                    mt.name as "typeName", 
+                    mt."minimumStock" as "minimumStock",
+                    mt."unitOfMeasure" as "unitOfMeasure",
+                    COALESCE(SUM(m.quantity), 0) as "totalQuantity",
+                    COUNT(m.id) as "itemCount"
+                FROM merchandise_type mt
+                LEFT JOIN merchandise m ON m."typeId" = mt.id
+                GROUP BY mt.id, mt.name, mt."minimumStock", mt."unitOfMeasure"
+                ORDER BY mt.name
+            `;
+            
+            const result = await repository.manager.query(query);
+            return result;
+        } catch (error) {
+            console.error("Erro ao buscar alertas de estoque", error);
+            throw error;
+        }
+    }
 }

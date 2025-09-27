@@ -7,6 +7,7 @@ const merchandiseController = new MerchandiseController();
 const router = Router();
 
 router.get("/", AuthMiddleware.requireRole(RoleEnum.SOLDADO), merchandiseController.listAll);
+router.get("/stock-alerts", AuthMiddleware.requireRole(RoleEnum.SOLDADO), merchandiseController.getStockAlerts);
 router.get("/:id", AuthMiddleware.requireRole(RoleEnum.SOLDADO), merchandiseController.getById);
 router.get("/:id/qrcode", AuthMiddleware.requireRole(RoleEnum.SOLDADO), merchandiseController.generateQRCode);
 

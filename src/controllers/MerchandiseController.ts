@@ -162,4 +162,18 @@ export class MerchandiseController {
             next(error);
         }
     }
+
+    async getStockAlerts(req: Request, res: Response, next: NextFunction) {
+        try {
+            const stockAlerts = await merchandiseService.getStockAlerts();
+            
+            res.status(200).json({
+                success: true,
+                data: stockAlerts,
+                message: "Alertas de estoque recuperados com sucesso"
+            });
+        } catch (error) {
+            next(error);
+        }
+    }
 }
