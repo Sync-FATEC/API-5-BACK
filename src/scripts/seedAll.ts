@@ -465,34 +465,34 @@ async function seedOrders(sections: Section[], stocks: Stock[]) {
   return createdOrders;
 }
 
-async function seedOrderItems(orders: Order[], merchandiseTypes: MerchandiseType[]) {
+async function seedOrderItems(orders: Order[], merchandises: Merchandise[]) {
   console.log("=== Criando Itens de Pedido ===");
   const orderItemRepository = AppDataSource.getRepository(OrderItem);
 
   const orderItems = [
     {
       order: orders[0],
-      merchandise: merchandiseTypes[0],
+      merchandise: merchandises[0],
       quantity: 50
     },
     {
       order: orders[1],
-      merchandise: merchandiseTypes[1],
+      merchandise: merchandises[1],
       quantity: 25
     },
     {
       order: orders[2],
-      merchandise: merchandiseTypes[2],
+      merchandise: merchandises[2],
       quantity: 5
     },
     {
       order: orders[3],
-      merchandise: merchandiseTypes[0],
+      merchandise: merchandises[0],
       quantity: 15
     },
     {
       order: orders[4],
-      merchandise: merchandiseTypes[1],
+      merchandise: merchandises[1],
       quantity: 30
     }
   ];
@@ -508,7 +508,7 @@ async function seedOrderItems(orders: Order[], merchandiseTypes: MerchandiseType
     const savedOrderItem = await orderItemRepository.save(orderItem);
     createdOrderItems.push(savedOrderItem);
 
-    console.log(`Item de pedido criado: ${itemData.merchandise.name} - Qtd: ${itemData.quantity}`);
+    console.log(`Item de pedido criado: ${itemData.merchandise.id} - Qtd: ${itemData.quantity}`);
   }
 
   return createdOrderItems;
@@ -546,8 +546,8 @@ async function seedAll() {
     // 8. Criar pedidos (depende de sections e stocks)
     const orders = await seedOrders(sections, stocks);
 
-    // 9. Criar itens de pedido (depende de orders e merchandiseTypes)
-    const orderItems = await seedOrderItems(orders, merchandiseTypes);
+    // 9. Criar itens de pedido (depende de orders e merchandises)
+    const orderItems = await seedOrderItems(orders, merchandises);
 
     console.log("\n🎉 Seed completo executado com sucesso!");
     console.log("📊 Resumo:");
