@@ -472,27 +472,27 @@ async function seedOrderItems(orders: Order[], merchandises: Merchandise[]) {
   const orderItems = [
     {
       order: orders[0],
-      merchandise: merchandises[0],
+  merchandiseType: merchandises[0].type,
       quantity: 50
     },
     {
       order: orders[1],
-      merchandise: merchandises[1],
+  merchandiseType: merchandises[1].type,
       quantity: 25
     },
     {
       order: orders[2],
-      merchandise: merchandises[2],
+  merchandiseType: merchandises[2].type,
       quantity: 5
     },
     {
       order: orders[3],
-      merchandise: merchandises[0],
+  merchandiseType: merchandises[0].type,
       quantity: 15
     },
     {
       order: orders[4],
-      merchandise: merchandises[1],
+  merchandiseType: merchandises[1].type,
       quantity: 30
     }
   ];
@@ -503,12 +503,12 @@ async function seedOrderItems(orders: Order[], merchandises: Merchandise[]) {
     const orderItem = new OrderItem();
     orderItem.quantity = itemData.quantity;
     orderItem.order = itemData.order;
-    orderItem.merchandise = itemData.merchandise;
+    orderItem.merchandiseType = itemData.merchandiseType;
 
     const savedOrderItem = await orderItemRepository.save(orderItem);
     createdOrderItems.push(savedOrderItem);
 
-    console.log(`Item de pedido criado: ${itemData.merchandise.id} - Qtd: ${itemData.quantity}`);
+    console.log(`Item de pedido criado: Tipo=${itemData.merchandiseType.name} (id=${itemData.merchandiseType.id}) - Qtd: ${itemData.quantity}`);
   }
 
   return createdOrderItems;

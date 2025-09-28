@@ -32,6 +32,6 @@ export class MerchandiseType {
     @OneToMany(() => Merchandise, merchandise => merchandise.type)
     merchandises!: Merchandise[];
 
-    @OneToMany(() => OrderItem, orderItem => orderItem.merchandise)
+    @OneToMany(() => OrderItem, orderItem => orderItem.merchandiseType)
     orderItems!: OrderItem[];
 }

@@ -30,7 +30,7 @@ export class Merchandise {
     @ManyToOne(() => Batch, batch => batch.merchandises)
     batch!: Batch;
 
-    @ManyToOne(() => MerchandiseType, type => type.merchandises)
+    @ManyToOne(() => MerchandiseType, type => type.merchandises, { onDelete: 'CASCADE' })
     type!: MerchandiseType;
 
     @ManyToOne(() => Stock, stock => stock.merchandises)

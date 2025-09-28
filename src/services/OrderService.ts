@@ -12,7 +12,7 @@ export class OrderService {
 		async getAll(stockId: string): Promise<OrderViewModel[]> {
 			const orders = await OrderRepository.find({ 
 				where: { stock: { id: stockId }, isActive: true },
-				relations: ['orderItems', 'orderItems.merchandise', 'section'] 
+				relations: ['orderItems', 'orderItems.merchandiseType', 'section'] 
 			});
 
 			return orders.map(order => ({
@@ -25,14 +25,14 @@ export class OrderService {
 				orderItems: order.orderItems.map(item => ({
 					id: item.id,
 					quantity: item.quantity,
-					merchandiseId: item.merchandise?.id ?? '',
-					merchandiseName: item.merchandise.name
+					merchandiseId: item.merchandiseType?.id ?? '',
+					merchandiseName: item.merchandiseType.name
 				}))
 			}));
 		}
 
 		async getById(id: string): Promise<OrderViewModel | null> {
-			const order = await OrderRepository.findOne({ where: { id }, relations: ['orderItems', 'orderItems.merchandise', 'section'] });
+			const order = await OrderRepository.findOne({ where: { id }, relations: ['orderItems', 'orderItems.merchandiseType', 'section'] });
 			if (!order) return null;
 			return {
 				id: order.id,
@@ -44,8 +44,8 @@ export class OrderService {
 				orderItems: order.orderItems.map(item => ({
 					id: item.id,
 					quantity: item.quantity,
-					merchandiseId: item.merchandise?.id ?? '',
-					merchandiseName: item.merchandise.name
+					merchandiseId: item.merchandiseType?.id ?? '',
+					merchandiseName: item.merchandiseType.name
 				}))
 			};
 		}
@@ -87,7 +87,7 @@ export class OrderService {
 
 			const orderItem = new OrderItem();
 			orderItem.quantity = itemDTO.quantity;
-			orderItem.merchandise = merchandiseType;
+			orderItem.merchandiseType = merchandiseType;
 			orderItem.order = order;
 			orderItems.push(orderItem);
 		}
@@ -106,14 +106,14 @@ export class OrderService {
 			orderItems: savedOrder.orderItems.map(item => ({
 				id: item.id,
 				quantity: item.quantity,
-				merchandiseId: item.merchandise?.id ?? ''
+				merchandiseId: item.merchandiseType?.id ?? ''
 			})),
 			stockId: stock.id
 		};
 	}
 
 		async update(id: string, orderData: OrderDTO): Promise<OrderDTO | null> {
-			const order = await OrderRepository.findOne({ where: { id }, relations: ['orderItems', 'orderItems.merchandise', 'section', 'stock'] });
+			const order = await OrderRepository.findOne({ where: { id }, relations: ['orderItems', 'orderItems.merchandiseType', 'section', 'stock'] });
 			if (!order) return null;
 
 			// Buscar Section
@@ -126,9 +126,9 @@ export class OrderService {
 			// Restaurar quantidades dos OrderItems antigos antes de removê-los
 			const merchandiseTypeRepository = AppDataSource.getRepository(MerchandiseType);
 			for (const oldItem of order.orderItems) {
-				if (oldItem.merchandise) {
-					oldItem.merchandise.quantityTotal += oldItem.quantity;
-					await merchandiseTypeRepository.save(oldItem.merchandise);
+				if (oldItem.merchandiseType) {
+					oldItem.merchandiseType.quantityTotal += oldItem.quantity;
+					await merchandiseTypeRepository.save(oldItem.merchandiseType);
 				}
 			}
 
@@ -142,21 +142,21 @@ export class OrderService {
 			// Criar novos OrderItems
 			const newOrderItems: OrderItem[] = [];
 			for (const itemDTO of orderData.orderItems) {
-				const merchandise = await merchandiseTypeRepository.findOne({ where: { id: itemDTO.merchandiseId } });
-				if (!merchandise) throw new SystemError(`Merchandise not found: ${itemDTO.merchandiseId}`);
+				const merchandiseType = await merchandiseTypeRepository.findOne({ where: { id: itemDTO.merchandiseId } });
+				if (!merchandiseType) throw new SystemError(`MerchandiseType not found: ${itemDTO.merchandiseId}`);
 
 				// Verificar se há quantidade suficiente
-				if (merchandise.quantityTotal < itemDTO.quantity) {
-					throw new SystemError(`Estoque total insuficiente para o tipo ${merchandise.name}. Disponível: ${merchandise.quantityTotal}, Solicitado: ${itemDTO.quantity}`);
+				if (merchandiseType.quantityTotal < itemDTO.quantity) {
+					throw new SystemError(`Estoque total insuficiente para o tipo ${merchandiseType.name}. Disponível: ${merchandiseType.quantityTotal}, Solicitado: ${itemDTO.quantity}`);
 				}
 
 				// Diminuir quantidade total do tipo de mercadoria
-				merchandise.quantityTotal -= itemDTO.quantity;
-				await merchandiseTypeRepository.save(merchandise);
+				merchandiseType.quantityTotal -= itemDTO.quantity;
+				await merchandiseTypeRepository.save(merchandiseType);
 
 				const orderItem = new OrderItem();
 				orderItem.quantity = itemDTO.quantity;
-				orderItem.merchandise = merchandise;
+				orderItem.merchandiseType = merchandiseType;
 				orderItem.order = order;
 				newOrderItems.push(orderItem);
 			}
@@ -174,7 +174,7 @@ export class OrderService {
 				orderItems: savedOrder.orderItems.map(item => ({
 					id: item.id,
 					quantity: item.quantity,
-					merchandiseId: item.merchandise?.id ?? ''
+					merchandiseId: item.merchandiseType?.id ?? ''
 				})),
 				stockId: savedOrder.stock?.id ?? ''
 			};
@@ -183,7 +183,7 @@ export class OrderService {
 	async updateStatus(id: string, status: string): Promise<OrderViewModel | null> {
 		const order = await OrderRepository.findOne({ 
 			where: { id, isActive: true }, 
-			relations: ['orderItems', 'orderItems.merchandise', 'section', 'stock'] 
+				relations: ['orderItems', 'orderItems.merchandiseType', 'section', 'stock'] 
 		});
 		
 		if (!order) return null;
@@ -203,8 +203,8 @@ export class OrderService {
 			orderItems: savedOrder.orderItems.map(item => ({
 				id: item.id,
 				quantity: item.quantity,
-				merchandiseId: item.merchandise?.id ?? '',
-				merchandiseName: item.merchandise.name
+				merchandiseId: item.merchandiseType?.id ?? '',
+				merchandiseName: item.merchandiseType.name
 			}))
 		};
 	}
