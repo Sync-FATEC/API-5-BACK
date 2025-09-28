@@ -11,7 +11,7 @@ import { SystemError } from '../middlewares/SystemError';
 export class OrderService {
 		async getAll(stockId: string): Promise<OrderViewModel[]> {
 			const orders = await OrderRepository.find({ 
-				where: { stock: { id: stockId } },
+				where: { stock: { id: stockId }, isActive: true },
 				relations: ['orderItems', 'orderItems.merchandise', 'section'] 
 			});
 
@@ -58,6 +58,14 @@ export class OrderService {
 		const stock = await AppDataSource.getRepository(Stock).findOne({ where: { id: orderData.stockId } });
 		if (!stock) throw new SystemError('Stock not found');
 
+		// Criar Order primeiro
+		const order = new Order();
+		order.creationDate = orderData.creationDate;
+		order.withdrawalDate = orderData.withdrawalDate ?? new Date();
+		order.status = orderData.status;
+		order.section = section;
+		order.stock = stock;
+
 		// Buscar MerchandiseType e criar OrderItems com validação de estoque
 		const orderItems: OrderItem[] = [];
 		const merchandiseTypeRepository = AppDataSource.getRepository(MerchandiseType);
@@ -80,16 +88,11 @@ export class OrderService {
 			const orderItem = new OrderItem();
 			orderItem.quantity = itemDTO.quantity;
 			orderItem.merchandise = merchandiseType;
+			orderItem.order = order;
 			orderItems.push(orderItem);
 		}
 
-		// Criar Order
-		const order = new Order();
-		order.creationDate = orderData.creationDate;
-		order.withdrawalDate = orderData.withdrawalDate ?? new Date();
-		order.status = orderData.status;
-		order.section = section;
-		order.stock = stock;
+		// Definir orderItems no order
 		order.orderItems = orderItems;
 
 		// Salvar Order e OrderItems
@@ -110,7 +113,7 @@ export class OrderService {
 	}
 
 		async update(id: string, orderData: OrderDTO): Promise<OrderDTO | null> {
-			const order = await OrderRepository.findOne({ where: { id }, relations: ['orderItems', 'section'] });
+			const order = await OrderRepository.findOne({ where: { id }, relations: ['orderItems', 'orderItems.merchandise', 'section', 'stock'] });
 			if (!order) return null;
 
 			// Buscar Section
@@ -120,6 +123,15 @@ export class OrderService {
 			const stock = await AppDataSource.getRepository(Stock).findOne({ where: { id: orderData.stockId } });
 			if (!stock) throw new SystemError('Stock not found');
 
+			// Restaurar quantidades dos OrderItems antigos antes de removê-los
+			const merchandiseTypeRepository = AppDataSource.getRepository(MerchandiseType);
+			for (const oldItem of order.orderItems) {
+				if (oldItem.merchandise) {
+					oldItem.merchandise.quantityTotal += oldItem.quantity;
+					await merchandiseTypeRepository.save(oldItem.merchandise);
+				}
+			}
+
 			// Atualizar dados básicos
 			order.creationDate = orderData.creationDate;
 			order.withdrawalDate = orderData.withdrawalDate ?? new Date();
@@ -127,17 +139,30 @@ export class OrderService {
 			order.section = section;
 			order.stock = stock;
 
-			// Atualizar OrderItems
-			order.orderItems = [];
+			// Criar novos OrderItems
+			const newOrderItems: OrderItem[] = [];
 			for (const itemDTO of orderData.orderItems) {
-				const merchandise = await AppDataSource.getRepository(MerchandiseType).findOne({ where: { id: itemDTO.merchandiseId } });
+				const merchandise = await merchandiseTypeRepository.findOne({ where: { id: itemDTO.merchandiseId } });
 				if (!merchandise) throw new SystemError(`Merchandise not found: ${itemDTO.merchandiseId}`);
+
+				// Verificar se há quantidade suficiente
+				if (merchandise.quantityTotal < itemDTO.quantity) {
+					throw new SystemError(`Estoque total insuficiente para o tipo ${merchandise.name}. Disponível: ${merchandise.quantityTotal}, Solicitado: ${itemDTO.quantity}`);
+				}
+
+				// Diminuir quantidade total do tipo de mercadoria
+				merchandise.quantityTotal -= itemDTO.quantity;
+				await merchandiseTypeRepository.save(merchandise);
+
 				const orderItem = new OrderItem();
 				orderItem.quantity = itemDTO.quantity;
 				orderItem.merchandise = merchandise;
 				orderItem.order = order;
-				order.orderItems.push(orderItem);
+				newOrderItems.push(orderItem);
 			}
+
+			// Substituir OrderItems
+			order.orderItems = newOrderItems;
 
 			const savedOrder = await OrderRepository.save(order);
 			return {
@@ -151,12 +176,41 @@ export class OrderService {
 					quantity: item.quantity,
 					merchandiseId: item.merchandise?.id ?? ''
 				})),
-				stockId: stock.id
+				stockId: savedOrder.stock?.id ?? ''
 			};
 		}
 
+	async updateStatus(id: string, status: string): Promise<OrderViewModel | null> {
+		const order = await OrderRepository.findOne({ 
+			where: { id, isActive: true }, 
+			relations: ['orderItems', 'orderItems.merchandise', 'section', 'stock'] 
+		});
+		
+		if (!order) return null;
+
+		// Atualizar apenas o status
+		order.status = status;
+		
+		const savedOrder = await OrderRepository.save(order);
+		
+		return {
+			id: savedOrder.id,
+			creationDate: savedOrder.creationDate,
+			withdrawalDate: savedOrder.withdrawalDate,
+			status: savedOrder.status,
+			sectionName: savedOrder.section.name,
+			sectionId: savedOrder.section?.id ?? '',
+			orderItems: savedOrder.orderItems.map(item => ({
+				id: item.id,
+				quantity: item.quantity,
+				merchandiseId: item.merchandise?.id ?? '',
+				merchandiseName: item.merchandise.name
+			}))
+		};
+	}
+
 	async delete(id: string): Promise<boolean> {
-		const result = await OrderRepository.delete(id);
+		const result = await OrderRepository.update(id, { isActive: false });
 		return result.affected !== 0;
 	}
 }

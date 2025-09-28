@@ -156,6 +156,48 @@ router.post('/', (req, res) => orderController.create(req, res));
  *         description: Dados inválidos
  */
 router.put('/:id', (req, res) => orderController.update(req, res));
+
+/**
+ * @swagger
+ * /orders/{id}/status:
+ *   patch:
+ *     summary: Atualiza o status de um pedido
+ *     tags: [Orders]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *         description: ID do pedido
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - status
+ *             properties:
+ *               status:
+ *                 type: string
+ *                 example: "ENTREGUE"
+ *                 description: Novo status do pedido
+ *     responses:
+ *       200:
+ *         description: Status do pedido atualizado com sucesso
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Order'
+ *       400:
+ *         description: Status é obrigatório
+ *       404:
+ *         description: Pedido não encontrado
+ */
+router.patch('/:id/status', (req, res) => orderController.updateStatus(req, res));
+
 /**
  * @swagger
  * /orders/{id}:

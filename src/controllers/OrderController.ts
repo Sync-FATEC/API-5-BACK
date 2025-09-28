@@ -20,6 +20,7 @@ export class OrderController {
 
 		async create(req: Request, res: Response) {
 			const data: OrderDTO = req.body;
+			
 			if (!data.creationDate || !data.status || !data.sectionId || !Array.isArray(data.orderItems) || !data.stockId) {
 				return res.status(400).json({ message: 'Missing required fields' });
 			}
@@ -32,6 +33,8 @@ export class OrderController {
 		async update(req: Request, res: Response) {
 			const { id } = req.params;
 			const data: OrderDTO = req.body;
+			console.log(data);
+			
 			if (!data.creationDate || !data.status || !data.sectionId || !Array.isArray(data.orderItems) || !data.stockId) {
 				return res.status(400).json({ message: 'Missing required fields' });
 			}
@@ -40,8 +43,23 @@ export class OrderController {
 			return res.json(order);
 		}
 
+	async updateStatus(req: Request, res: Response) {
+		const { id } = req.params;
+		const { status } = req.body;
+		
+		if (!status) {
+			return res.status(400).json({ message: 'Status is required' });
+		}
+		
+		const order = await orderService.updateStatus(id, status);
+		if (!order) return res.status(404).json({ message: 'Order not found' });
+		return res.json(order);
+	}
+
 	async delete(req: Request, res: Response) {
 		const { id } = req.params;
+		console.log(123);
+		
 		const success = await orderService.delete(id);
 		if (!success) return res.status(404).json({ message: 'Order not found' });
 		return res.status(204).send();

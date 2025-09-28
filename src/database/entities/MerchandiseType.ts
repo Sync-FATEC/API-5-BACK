@@ -1,6 +1,7 @@
 import { Entity, PrimaryGeneratedColumn, Column, OneToMany } from 'typeorm';
 import { Merchandise } from './Merchandise';
 import { MerchandiseGroup } from '../enums/MerchandiseGroup';
+import { OrderItem } from './OrderItem';
 
 @Entity()
 export class MerchandiseType {
@@ -30,4 +31,7 @@ export class MerchandiseType {
 
     @OneToMany(() => Merchandise, merchandise => merchandise.type)
     merchandises!: Merchandise[];
+
+    @OneToMany(() => OrderItem, orderItem => orderItem.merchandise)
+    orderItems!: OrderItem[];
 }
