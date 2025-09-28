@@ -28,9 +28,9 @@ const router = Router();
  *       403:
  *         description: Acesso negado - Requer role SOLDADO ou superior
  */
-router.get("/", AuthMiddleware.requireRole(RoleEnum.SOLDADO), merchandiseController.listAll);
+router.get("/",  merchandiseController.listAll);
 
-router.get("/stock-alerts", AuthMiddleware.requireRole(RoleEnum.SOLDADO), merchandiseController.getStockAlerts);
+router.get("/stock-alerts",  merchandiseController.getStockAlerts);
 
 /**
  * @swagger
@@ -62,7 +62,7 @@ router.get("/stock-alerts", AuthMiddleware.requireRole(RoleEnum.SOLDADO), mercha
  *       403:
  *         description: Acesso negado - Requer role SOLDADO ou superior
  */
-router.get("/:id", AuthMiddleware.requireRole(RoleEnum.SOLDADO), merchandiseController.getById);
+router.get("/:id",  merchandiseController.getById);
 
 /**
  * @swagger
@@ -95,7 +95,7 @@ router.get("/:id", AuthMiddleware.requireRole(RoleEnum.SOLDADO), merchandiseCont
  *       403:
  *         description: Acesso negado - Requer role SOLDADO ou superior
  */
-router.get("/:id/qrcode", AuthMiddleware.requireRole(RoleEnum.SOLDADO), merchandiseController.generateQRCode);
+router.get("/:id/qrcode",  merchandiseController.generateQRCode);
 
 /**
  * @swagger
@@ -146,7 +146,7 @@ router.get("/:id/qrcode", AuthMiddleware.requireRole(RoleEnum.SOLDADO), merchand
  *       403:
  *         description: Acesso negado - Requer role SOLDADO ou superior
  */
-router.post("/", AuthMiddleware.requireRole(RoleEnum.SOLDADO), merchandiseController.create);
+router.post("/",  merchandiseController.create);
 
 /**
  * @swagger
@@ -202,7 +202,7 @@ router.post("/", AuthMiddleware.requireRole(RoleEnum.SOLDADO), merchandiseContro
  *       403:
  *         description: Acesso negado - Requer role SOLDADO ou superior
  */
-router.put("/:id", AuthMiddleware.requireRole(RoleEnum.SOLDADO), merchandiseController.update);
+router.put("/:id",  merchandiseController.update);
 
 /**
  * @swagger
