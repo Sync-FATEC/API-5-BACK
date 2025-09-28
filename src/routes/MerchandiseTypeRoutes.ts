@@ -42,15 +42,23 @@ const router = Router();
 
 /**
  * @swagger
- * /merchandise-types:
+ * /merchandise-types/{stockId}:
  *   get:
- *     summary: Lista todos os tipos de produto
+ *     summary: Lista tipos de produto de um stock específico
  *     tags: [MerchandiseTypes]
  *     security:
  *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: stockId
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *         description: ID do stock para filtrar os tipos de produto
  *     responses:
  *       200:
- *         description: Lista de tipos de produto
+ *         description: Lista de tipos de produto do stock especificado
  *         content:
  *           application/json:
  *             schema:
@@ -62,11 +70,11 @@ const router = Router();
  *       403:
  *         description: Acesso negado - Requer role SOLDADO ou superior
  */
-router.get("/", AuthMiddleware.requireRole(RoleEnum.SOLDADO), merchandiseTypeController.listAll);
+router.get("/:stockId", merchandiseTypeController.listAll);
 
 /**
  * @swagger
- * /merchandise-types/{id}:
+ * /merchandise-types/details/{id}:
  *   get:
  *     summary: Busca tipo de produto por ID
  *     tags: [MerchandiseTypes]
@@ -94,7 +102,7 @@ router.get("/", AuthMiddleware.requireRole(RoleEnum.SOLDADO), merchandiseTypeCon
  *       403:
  *         description: Acesso negado - Requer role SOLDADO ou superior
  */
-router.get("/:id", AuthMiddleware.requireRole(RoleEnum.SOLDADO), merchandiseTypeController.getById);
+router.get("/details/:id", merchandiseTypeController.getById);
 
 /**
  * @swagger
@@ -155,7 +163,7 @@ router.get("/:id", AuthMiddleware.requireRole(RoleEnum.SOLDADO), merchandiseType
  *       403:
  *         description: Acesso negado - Requer role SOLDADO ou superior
  */
-router.post("/", AuthMiddleware.requireRole(RoleEnum.SOLDADO), merchandiseTypeController.create);
+router.post("/", merchandiseTypeController.create);
 
 /**
  * @swagger
@@ -218,7 +226,7 @@ router.post("/", AuthMiddleware.requireRole(RoleEnum.SOLDADO), merchandiseTypeCo
  *       403:
  *         description: Acesso negado - Requer role SOLDADO ou superior
  */
-router.put("/:id", AuthMiddleware.requireRole(RoleEnum.SOLDADO), merchandiseTypeController.update);
+router.put("/:id", merchandiseTypeController.update);
 
 /**
  * @swagger
@@ -246,7 +254,7 @@ router.put("/:id", AuthMiddleware.requireRole(RoleEnum.SOLDADO), merchandiseType
  *       403:
  *         description: Acesso negado - Requer role SUPERVISOR ou superior
  */
-router.delete("/:id", AuthMiddleware.requireRole(RoleEnum.SUPERVISOR), merchandiseTypeController.delete);
+router.delete("/:id", merchandiseTypeController.delete);
 
 /**
  * @swagger

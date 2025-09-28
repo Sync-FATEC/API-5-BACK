@@ -23,9 +23,9 @@ export class MerchandiseTypeService {
         }
     }
 
-    async getAllMerchandiseTypes() {
+    async getAllMerchandiseTypes(stockId?: string) {
         try {
-            return await merchandiseTypeRepository.listAll();
+            return await merchandiseTypeRepository.listAll(stockId);
         } catch (error) {
             console.error("Erro ao listar tipos de mercadoria:", error);
             throw error;

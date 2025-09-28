@@ -34,11 +34,22 @@ export class MerchandiseTypeRepository {
         }
     }
 
-    async listAll() {
+    async listAll(stockId?: string) {
         try {
-            return await repository.find({
-                relations: ['merchandises']
-            });
+            if (stockId) {
+                // Filtrar tipos de mercadoria que têm produtos no stock específico
+                return await repository
+                    .createQueryBuilder('merchandiseType')
+                    .leftJoinAndSelect('merchandiseType.merchandises', 'merchandise')
+                    .leftJoinAndSelect('merchandise.stock', 'stock')
+                    .where('stock.id = :stockId', { stockId })
+                    .getMany();
+            } else {
+                // Retornar todos os tipos de mercadoria
+                return await repository.find({
+                    relations: ['merchandises']
+                });
+            }
         } catch (error) {
             console.error("Erro ao listar tipos de mercadoria", error);
             throw error;

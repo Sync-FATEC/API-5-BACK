@@ -37,7 +37,8 @@ export class MerchandiseTypeController {
 
     async listAll(req: Request, res: Response, next: NextFunction) {
         try {
-            const merchandiseTypes = await merchandiseTypeService.getAllMerchandiseTypes();
+            const { stockId } = req.params;
+            const merchandiseTypes = await merchandiseTypeService.getAllMerchandiseTypes(stockId);
             res.status(200).json({
                 success: true,
                 data: merchandiseTypes,
