@@ -16,6 +16,7 @@ export interface OrderDTO {
   status: string;
   sectionId: string;
   orderItems: OrderItemDTO[];
+  stockId: string
 }
 
 

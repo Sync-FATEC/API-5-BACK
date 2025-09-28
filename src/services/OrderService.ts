@@ -5,12 +5,15 @@ import { Section } from '../database/entities/Section';
 import { MerchandiseType } from '../database/entities/MerchandiseType';
 import { OrderDTO, OrderItemDTO, OrderViewModel } from '../types/OrderSectionDTO';
 import { AppDataSource } from '../database/data-source';
+import { Stock } from '../database/entities/Stock';
+import { SystemError } from '../middlewares/SystemError';
 
 export class OrderService {
-		async getAll(): Promise<OrderViewModel[]> {
-			const orders = await OrderRepository.find({ relations: ['orderItems', 'orderItems.merchandise', 'section'] });
-
-			console.log(orders)
+		async getAll(stockId: string): Promise<OrderViewModel[]> {
+			const orders = await OrderRepository.find({ 
+				where: { stock: { id: stockId } },
+				relations: ['orderItems', 'orderItems.merchandise', 'section'] 
+			});
 
 			return orders.map(order => ({
 				id: order.id,
@@ -50,7 +53,10 @@ export class OrderService {
 		async create(orderData: OrderDTO): Promise<OrderDTO> {
 		// Buscar Section
 		const section = await AppDataSource.getRepository(Section).findOne({ where: { id: orderData.sectionId } });
-		if (!section) throw new Error('Section not found');
+		if (!section) throw new SystemError('Section not found');
+
+		const stock = await AppDataSource.getRepository(Stock).findOne({ where: { id: orderData.stockId } });
+		if (!stock) throw new SystemError('Stock not found');
 
 		// Buscar MerchandiseType e criar OrderItems com validação de estoque
 		const orderItems: OrderItem[] = [];
@@ -60,11 +66,11 @@ export class OrderService {
 			const merchandiseType = await merchandiseTypeRepository.findOne({ 
 				where: { id: itemDTO.merchandiseId }
 			});
-			if (!merchandiseType) throw new Error(`MerchandiseType not found: ${itemDTO.merchandiseId}`);
+			if (!merchandiseType) throw new SystemError(`MerchandiseType not found: ${itemDTO.merchandiseId}`);
 
 			// Verificar se há quantidade suficiente no tipo de mercadoria
 			if (merchandiseType.quantityTotal < itemDTO.quantity) {
-				throw new Error(`Estoque total insuficiente para o tipo ${merchandiseType.name}. Disponível: ${merchandiseType.quantityTotal}, Solicitado: ${itemDTO.quantity}`);
+				throw new SystemError(`Estoque total insuficiente para o tipo ${merchandiseType.name}. Disponível: ${merchandiseType.quantityTotal}, Solicitado: ${itemDTO.quantity}`);
 			}
 
 			// Diminuir quantidade total do tipo de mercadoria
@@ -83,6 +89,7 @@ export class OrderService {
 		order.withdrawalDate = orderData.withdrawalDate ?? new Date();
 		order.status = orderData.status;
 		order.section = section;
+		order.stock = stock;
 		order.orderItems = orderItems;
 
 		// Salvar Order e OrderItems
@@ -97,7 +104,8 @@ export class OrderService {
 				id: item.id,
 				quantity: item.quantity,
 				merchandiseId: item.merchandise?.id ?? ''
-			}))
+			})),
+			stockId: stock.id
 		};
 	}
 
@@ -107,19 +115,23 @@ export class OrderService {
 
 			// Buscar Section
 			const section = await AppDataSource.getRepository(Section).findOne({ where: { id: orderData.sectionId } });
-			if (!section) throw new Error('Section not found');
+			if (!section) throw new SystemError('Section not found');
+
+			const stock = await AppDataSource.getRepository(Stock).findOne({ where: { id: orderData.stockId } });
+			if (!stock) throw new SystemError('Stock not found');
 
 			// Atualizar dados básicos
 			order.creationDate = orderData.creationDate;
 			order.withdrawalDate = orderData.withdrawalDate ?? new Date();
 			order.status = orderData.status;
 			order.section = section;
+			order.stock = stock;
 
 			// Atualizar OrderItems
 			order.orderItems = [];
 			for (const itemDTO of orderData.orderItems) {
 				const merchandise = await AppDataSource.getRepository(MerchandiseType).findOne({ where: { id: itemDTO.merchandiseId } });
-				if (!merchandise) throw new Error(`Merchandise not found: ${itemDTO.merchandiseId}`);
+				if (!merchandise) throw new SystemError(`Merchandise not found: ${itemDTO.merchandiseId}`);
 				const orderItem = new OrderItem();
 				orderItem.quantity = itemDTO.quantity;
 				orderItem.merchandise = merchandise;
@@ -138,7 +150,8 @@ export class OrderService {
 					id: item.id,
 					quantity: item.quantity,
 					merchandiseId: item.merchandise?.id ?? ''
-				}))
+				})),
+				stockId: stock.id
 			};
 		}
 

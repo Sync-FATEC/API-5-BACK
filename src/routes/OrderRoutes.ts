@@ -20,7 +20,7 @@ const orderController = new OrderController();
  *               items:
  *                 $ref: '#/components/schemas/Order'
  */
-router.get('/', (req, res) => orderController.getAll(req, res));
+router.get('/:stockId', (req, res) => orderController.getAll(req, res));
 /**
  * @swagger
  * /orders/{id}:

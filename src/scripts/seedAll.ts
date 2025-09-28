@@ -410,7 +410,7 @@ async function seedSections() {
   return createdSections;
 }
 
-async function seedOrders(sections: Section[]) {
+async function seedOrders(sections: Section[], stocks: Stock[]) {
   console.log("=== Criando Pedidos ===");
   const orderRepository = AppDataSource.getRepository(Order);
   const orders = [
@@ -418,31 +418,36 @@ async function seedOrders(sections: Section[]) {
       creationDate: new Date('2024-01-15'),
       withdrawalDate: new Date('2024-01-20'),
       status: "COMPLETED",
-      section: sections[0]
+      section: sections[0],
+      stock: stocks[0] // Estoque Principal
     },
     {
       creationDate: new Date('2024-01-25'),
       withdrawalDate: null,
       status: "PENDING",
-      section: sections[1]
+      section: sections[1],
+      stock: stocks[1] // Farmácia
     },
     {
       creationDate: new Date('2024-01-30'),
       withdrawalDate: null,
-      status: "PROCESSING",
-      section: sections[2]
+      status: "PENDING",
+      section: sections[2],
+      stock: stocks[1] // Farmácia
     },
     {
       creationDate: new Date('2024-02-05'),
       withdrawalDate: null,
       status: "PENDING",
-      section: sections[3]
+      section: sections[3],
+      stock: stocks[2] // Almoxarifado
     },
     {
       creationDate: new Date('2024-02-10'),
       withdrawalDate: null,
-      status: "PROCESSING",
-      section: sections[4]
+      status: "COMPLETED",
+      section: sections[4],
+      stock: stocks[0] // Estoque Principal
     }
   ];
   const createdOrders: Order[] = [];
@@ -452,9 +457,10 @@ async function seedOrders(sections: Section[]) {
     order.withdrawalDate = orderData.withdrawalDate as any;
     order.status = orderData.status;
     order.section = orderData.section;
+    order.stock = orderData.stock;
     const savedOrder = await orderRepository.save(order);
     createdOrders.push(savedOrder);
-    console.log(`Pedido criado: ${savedOrder.status} - Data: ${savedOrder.creationDate.toISOString().split('T')[0]} - Seção: ${savedOrder.section.name}`);
+    console.log(`Pedido criado: ${savedOrder.status} - Data: ${savedOrder.creationDate.toISOString().split('T')[0]} - Seção: ${savedOrder.section.name} - Estoque: ${savedOrder.stock.name}`);
   }
   return createdOrders;
 }
@@ -537,8 +543,8 @@ async function seedAll() {
     // 7. Criar seções (independente)
     const sections = await seedSections();
 
-    // 8. Criar pedidos (depende de sections)
-    const orders = await seedOrders(sections);
+    // 8. Criar pedidos (depende de sections e stocks)
+    const orders = await seedOrders(sections, stocks);
 
     // 9. Criar itens de pedido (depende de orders e merchandiseTypes)
     const orderItems = await seedOrderItems(orders, merchandiseTypes);
