@@ -1,5 +1,6 @@
 import { AppDataSource } from "../database/data-source";
 import { MerchandiseType } from "../database/entities/MerchandiseType";
+import { Stock } from "../database/entities/Stock";
 import { SystemError } from "../middlewares/SystemError";
 import { MerchandiseTypeType } from "../types/ProductTypeType";
 
@@ -8,7 +9,18 @@ const repository = AppDataSource.getRepository(MerchandiseType);
 export class MerchandiseTypeRepository {
     async create(merchandiseType: MerchandiseTypeType) {
         try {
-            const savedMerchandiseType = await repository.save(merchandiseType);
+            const stock = await AppDataSource.getRepository(Stock).findOne({
+                where: { id: merchandiseType.stockId }
+            });
+
+            if (!stock) {
+                throw new SystemError("Stock não encontrado");
+            }
+
+            const savedMerchandiseType = await repository.save({
+                ...merchandiseType,
+                stock
+            });
             return savedMerchandiseType;
         } catch (error) {
             console.error("Erro ao criar o tipo de mercadoria", error);
@@ -20,7 +32,7 @@ export class MerchandiseTypeRepository {
         try {
             const merchandiseType = await repository.findOne({
                 where: { id },
-                relations: ['merchandises']
+                relations: ['stock', 'merchandises']
             });
 
             if (!merchandiseType) {
@@ -34,20 +46,36 @@ export class MerchandiseTypeRepository {
         }
     }
 
+    async getByRecordNumber(recordNumber: string) {
+        try {
+            const merchandiseType = await repository.findOne({
+                where: { recordNumber },
+                relations: ['stock', 'merchandises']
+            });
+
+            if (!merchandiseType) {
+                throw new SystemError("Tipo de mercadoria não encontrado com este número de ficha");
+            }
+
+            return merchandiseType;
+        } catch (error) {
+            console.error("Erro ao buscar o tipo de mercadoria por número de ficha", error);
+            throw error;
+        }
+    }
+
     async listAll(stockId?: string) {
         try {
             if (stockId) {
-                // Filtrar tipos de mercadoria que têm produtos no stock específico
-                return await repository
-                    .createQueryBuilder('merchandiseType')
-                    .leftJoinAndSelect('merchandiseType.merchandises', 'merchandise')
-                    .leftJoinAndSelect('merchandise.stock', 'stock')
-                    .where('stock.id = :stockId', { stockId })
-                    .getMany();
+                // Filtrar tipos de mercadoria por stockId
+                return await repository.find({
+                    where: { stockId },
+                    relations: ['stock', 'merchandises']
+                });
             } else {
                 // Retornar todos os tipos de mercadoria
                 return await repository.find({
-                    relations: ['merchandises']
+                    relations: ['stock', 'merchandises']
                 });
             }
         } catch (error) {

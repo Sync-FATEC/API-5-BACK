@@ -1,7 +1,7 @@
-import { Entity, PrimaryGeneratedColumn, Column, OneToMany } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, OneToMany, ManyToOne } from 'typeorm';
 import { Merchandise } from './Merchandise';
-import { MerchandiseGroup } from '../enums/MerchandiseGroup';
 import { OrderItem } from './OrderItem';
+import { Stock } from './Stock';
 
 @Entity()
 export class MerchandiseType {
@@ -23,11 +23,14 @@ export class MerchandiseType {
     @Column()
     controlled!: boolean;
 
-    @Column({ type: 'enum', enum: MerchandiseGroup })
-    group!: MerchandiseGroup;
-
     @Column()
     minimumStock!: number;
+
+    @Column()
+    stockId!: string;
+
+    @ManyToOne(() => Stock, stock => stock.merchandiseTypes)
+    stock!: Stock;
 
     @OneToMany(() => Merchandise, merchandise => merchandise.type)
     merchandises!: Merchandise[];

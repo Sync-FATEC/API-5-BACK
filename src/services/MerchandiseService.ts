@@ -1,7 +1,7 @@
 import { SystemError } from "../middlewares/SystemError";
 import { MerchandiseRepository } from "../repository/MerchandiseRepository";
 import { MerchandiseTypeRepository } from "../repository/MerchandiseTypeRepository";
-import { MerchandiseTypeEnum, StockAlert, StockAlertSummary } from "../types/ProductType";
+import { MerchandiseTypeEnum, MerchandiseCreateByRecordNumber, StockAlert, StockAlertSummary } from "../types/ProductType";
 import { RoleEnum } from "../database/enums/RoleEnum";
 
 const merchandiseRepository = new MerchandiseRepository();
@@ -20,6 +20,29 @@ export class MerchandiseService {
             return savedMerchandise;
         } catch (error) {
             console.error("Erro no serviço de criação de mercadoria:", error);
+            throw error;
+        }
+    }
+
+    async createMerchandiseByRecordNumber(merchandiseData: MerchandiseCreateByRecordNumber, validDate: Date) {
+        try {
+            // Buscar o tipo de mercadoria pelo número da ficha
+            const merchandiseType = await merchandiseTypeRepository.getByRecordNumber(merchandiseData.recordNumber);
+            
+            if (merchandiseData.quantity < 0) {
+                throw new SystemError("A quantidade não pode ser negativa");
+            }
+
+            // Criar a mercadoria com o typeId encontrado
+            const merchandise: MerchandiseTypeEnum = {
+                ...merchandiseData,
+                typeId: merchandiseType.id
+            };
+
+            const savedMerchandise = await merchandiseRepository.create(merchandise, validDate);
+            return savedMerchandise;
+        } catch (error) {
+            console.error("Erro no serviço de criação de mercadoria por número de ficha:", error);
             throw error;
         }
     }

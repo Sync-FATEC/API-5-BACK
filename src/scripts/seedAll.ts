@@ -2,7 +2,6 @@ import "reflect-metadata";
 import { AppDataSource } from "../database/data-source";
 import { RoleEnum } from "../database/enums/RoleEnum";
 import { StockResponsibility } from "../database/enums/StockResponsability";
-import { MerchandiseGroup } from "../database/enums/MerchandiseGroup";
 import { createUserWithEmailAndPassword, signInWithEmailAndPassword } from "firebase/auth";
 import { initializeApp } from "firebase/app";
 import { getAuth } from "firebase/auth";
@@ -257,7 +256,7 @@ async function seedBatches() {
   return createdBatches;
 }
 
-async function seedMerchandiseTypes() {
+async function seedMerchandiseTypes(stocks: Stock[]) {
   console.log("=== Criando Tipos de Mercadoria ===");
   const merchandiseTypeRepository = AppDataSource.getRepository(MerchandiseType);
 
@@ -267,8 +266,8 @@ async function seedMerchandiseTypes() {
     unitOfMeasure: string;
     quantityTotal: number;
     controlled: boolean;
-    group: MerchandiseGroup;
     minimumStock: number;
+    stockId: string;
   }> = [
     {
       name: "Medicamento Analgésico",
@@ -276,8 +275,8 @@ async function seedMerchandiseTypes() {
       unitOfMeasure: "Comprimido",
       quantityTotal: 500,
       controlled: true,
-      group: MerchandiseGroup.Medical,
-      minimumStock: 100
+      minimumStock: 100,
+      stockId: stocks[1].id // Farmácia
     },
     {
       name: "Material de Escritório",
@@ -285,8 +284,8 @@ async function seedMerchandiseTypes() {
       unitOfMeasure: "Unidade",
       quantityTotal: 200,
       controlled: false,
-      group: MerchandiseGroup.Almox,
-      minimumStock: 50
+      minimumStock: 50,
+      stockId: stocks[2].id // Almoxarifado
     },
     {
       name: "Equipamento Médico",
@@ -294,8 +293,8 @@ async function seedMerchandiseTypes() {
       unitOfMeasure: "Peça",
       quantityTotal: 25,
       controlled: true,
-      group: MerchandiseGroup.Medical,
-      minimumStock: 10
+      minimumStock: 10,
+      stockId: stocks[1].id // Farmácia
     }
   ];
 
@@ -318,19 +317,19 @@ async function seedMerchandiseTypes() {
     merchandiseType.unitOfMeasure = typeData.unitOfMeasure;
     merchandiseType.quantityTotal = typeData.quantityTotal;
     merchandiseType.controlled = typeData.controlled;
-    merchandiseType.group = typeData.group;
     merchandiseType.minimumStock = typeData.minimumStock;
+    merchandiseType.stockId = typeData.stockId;
 
     const savedType = await merchandiseTypeRepository.save(merchandiseType);
     createdMerchandiseTypes.push(savedType);
 
-    console.log(`Tipo de mercadoria criado: ${savedType.name} (${savedType.recordNumber})`);
+    console.log(`Tipo de mercadoria criado: ${savedType.name} (${savedType.recordNumber}) - Stock: ${typeData.stockId}`);
   }
 
   return createdMerchandiseTypes;
 }
 
-async function seedMerchandises(batches: Batch[], merchandiseTypes: MerchandiseType[], stocks: Stock[]) {
+async function seedMerchandises(batches: Batch[], merchandiseTypes: MerchandiseType[]) {
   console.log("=== Criando Mercadorias ===");
   const merchandiseRepository = AppDataSource.getRepository(Merchandise);
 
@@ -338,21 +337,18 @@ async function seedMerchandises(batches: Batch[], merchandiseTypes: MerchandiseT
     {
       batch: batches[0],
       type: merchandiseTypes[0],
-      stock: stocks[1], // Estoque Médico
       quantity: 500,
       status: MerchandiseStatus.AVAILABLE
     },
     {
       batch: batches[1],
       type: merchandiseTypes[1],
-      stock: stocks[2], // Estoque Almoxarifado
       quantity: 200,
       status: MerchandiseStatus.AVAILABLE
     },
     {
       batch: batches[2],
       type: merchandiseTypes[2],
-      stock: stocks[1], // Estoque Médico
       quantity: 25,
       status: MerchandiseStatus.RESERVED
     }
@@ -368,7 +364,6 @@ async function seedMerchandises(batches: Batch[], merchandiseTypes: MerchandiseT
     merchandise.status = merchData.status;
     merchandise.batch = merchData.batch;
     merchandise.type = merchData.type;
-    merchandise.stock = merchData.stock;
 
     const savedMerchandise = await merchandiseRepository.save(merchandise);
     createdMerchandises.push(savedMerchandise);
@@ -534,11 +529,11 @@ async function seedAll() {
     // 4. Criar lotes (independente)
     const batches = await seedBatches();
 
-    // 5. Criar tipos de mercadoria (independente)
-    const merchandiseTypes = await seedMerchandiseTypes();
+    // 5. Criar tipos de mercadoria (depende de stocks)
+    const merchandiseTypes = await seedMerchandiseTypes(stocks);
 
-    // 6. Criar mercadorias (depende de batches, merchandiseTypes e stocks)
-    const merchandises = await seedMerchandises(batches, merchandiseTypes, stocks);
+    // 6. Criar mercadorias (depende de batches e merchandiseTypes)
+    const merchandises = await seedMerchandises(batches, merchandiseTypes);
 
     // 7. Criar seções (independente)
     const sections = await seedSections();

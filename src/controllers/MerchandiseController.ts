@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from "express";
-import { MerchandiseTypeEnum } from "../types/ProductType";
+import { MerchandiseTypeEnum, MerchandiseCreateByRecordNumber } from "../types/ProductType";
 import { SystemError } from "../middlewares/SystemError";
 import { MerchandiseService } from "../services/MerchandiseService";
 import { MerchandiseStatus } from "../database/entities/Merchandise";
@@ -10,19 +10,20 @@ const merchandiseService = new MerchandiseService();
 export class MerchandiseController {
     async create(req: Request, res: Response, next: NextFunction) {
         try {
-            const { typeId, quantity, status, validDate } = req.body;
-
-            if (!typeId || quantity === undefined || !status || !validDate) {
-                throw new SystemError("Dados incompletos. typeId, quantity, status e validDate são obrigatórios.");
+            const { recordNumber, quantity, status, validDate } = req.body;
+            
+            if (!recordNumber || quantity === undefined || !status) {
+                throw new SystemError("Número da ficha, quantidade e status são obrigatórios");
             }
 
-            const merchandiseData: MerchandiseTypeEnum = {
-                typeId,
-                quantity: Number(quantity),
-                status: status as MerchandiseStatus
+            const merchandiseData: MerchandiseCreateByRecordNumber = {
+                recordNumber,
+                quantity,
+                status
             };
 
-            const merchandise = await merchandiseService.createMerchandise(merchandiseData, validDate);
+            const validDateObj = validDate ? new Date(validDate) : new Date();
+            const merchandise = await merchandiseService.createMerchandiseByRecordNumber(merchandiseData, validDateObj);
 
             res.status(201).json({
                 success: true,

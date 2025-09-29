@@ -1,7 +1,6 @@
 import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, OneToMany } from 'typeorm';
 import { Batch } from './Batch';
 import { MerchandiseType } from './MerchandiseType';
-import { Stock } from './Stock';
 import { OrderItem } from './OrderItem';
 
 export enum MerchandiseStatus {
@@ -32,7 +31,4 @@ export class Merchandise {
 
     @ManyToOne(() => MerchandiseType, type => type.merchandises, { onDelete: 'CASCADE' })
     type!: MerchandiseType;
-
-    @ManyToOne(() => Stock, stock => stock.merchandises)
-    stock!: Stock;
 }
