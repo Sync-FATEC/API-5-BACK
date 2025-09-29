@@ -379,16 +379,31 @@ async function seedMerchandises(batches: Batch[], merchandiseTypes: MerchandiseT
 async function seedSections() {
   console.log("=== Criando Seções ===");
   const sectionRepository = AppDataSource.getRepository(Section);
-  const sections = [
-    { name: "Almoxarifado" },
-    { name: "Farmácia" },
-    { name: "Enfermaria" },
-    { name: "Laboratório" },
-    { name: "Emergência" },
-    { name: "Administração" },
-    { name: "Logística" },
-    { name: "Manutenção" }
-  ];
+const sections = [
+  // Defesa / Militar
+  { name: "IMBEL - Indústria de Material Bélico do Brasil" },
+  { name: "CBC - Companhia Brasileira de Cartuchos" },
+  { name: "Avibras Indústria Aeroespacial" },
+  { name: "AEL Sistemas" },
+  { name: "Ares Aeroespacial e Defesa" },
+  { name: "Thales Brasil" },
+  { name: "Safran Brasil" },
+  { name: "Collins Aerospace Brasil" },
+  { name: "Powerpack" },
+
+  // Almoxarifado / Uso diário
+  { name: "Kalunga - Papelaria e Escritório" },
+  { name: "3M Brasil - EPIs e Materiais Industriais" },
+  { name: "Assaí Atacadista - Atacado e Suprimentos" },
+  { name: "Atacadão - Consumo e Limpeza" },
+  { name: "Makro - Atacado Geral" },
+  { name: "Casa do EPI - Equipamentos de Proteção Individual" },
+  { name: "Leroy Merlin - Ferramentas e Manutenção" },
+  { name: "Staples/Kora - Escritório e Informática" },
+  { name: "Bombril - Limpeza" },
+  { name: "Philips/Osram - Iluminação" }
+];
+
   const createdSections: Section[] = [];
   for (const sectionData of sections) {
     let section = await sectionRepository.findOne({ where: { name: sectionData.name } });
