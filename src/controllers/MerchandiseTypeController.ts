@@ -9,10 +9,10 @@ const merchandiseTypeService = new MerchandiseTypeService();
 export class MerchandiseTypeController {
     async create(req: Request, res: Response, next: NextFunction) {
         try {
-            const { name, recordNumber, unitOfMeasure, controlled, group, minimumStock } = req.body;
+            const { name, recordNumber, unitOfMeasure, controlled, minimumStock, stockId } = req.body;
 
-            if (!name || !recordNumber || !unitOfMeasure || controlled === undefined || !group || minimumStock === undefined) {
-                throw new SystemError("Dados incompletos. Name, recordNumber, unitOfMeasure, controlled, group e minimumStock são obrigatórios.");
+            if (!name || !recordNumber || !unitOfMeasure || controlled === undefined || minimumStock === undefined || !stockId) {
+                throw new SystemError("Dados incompletos. Name, recordNumber, unitOfMeasure, controlled, minimumStock e stockId são obrigatórios.");
             }
 
             const merchandiseTypeData: MerchandiseTypeType = {
@@ -20,8 +20,8 @@ export class MerchandiseTypeController {
                 recordNumber,
                 unitOfMeasure,
                 controlled: Boolean(controlled),
-                group: group as MerchandiseGroup,
-                minimumStock: Number(minimumStock)
+                minimumStock: Number(minimumStock),
+                stockId
             };
 
             const merchandiseType = await merchandiseTypeService.createMerchandiseType(merchandiseTypeData);
@@ -37,7 +37,8 @@ export class MerchandiseTypeController {
 
     async listAll(req: Request, res: Response, next: NextFunction) {
         try {
-            const merchandiseTypes = await merchandiseTypeService.getAllMerchandiseTypes();
+            const { stockId } = req.params;
+            const merchandiseTypes = await merchandiseTypeService.getAllMerchandiseTypes(stockId);
             res.status(200).json({
                 success: true,
                 data: merchandiseTypes,
@@ -70,13 +71,13 @@ export class MerchandiseTypeController {
     async update(req: Request, res: Response, next: NextFunction) {
         try {
             const { id } = req.params;
-            const { name, recordNumber, unitOfMeasure, controlled, group, minimumStock } = req.body;
+            const { name, recordNumber, unitOfMeasure, controlled, minimumStock } = req.body;
 
             if (!id) {
                 throw new SystemError("ID do tipo de mercadoria é obrigatório");
             }
 
-            if (!name && !recordNumber && !unitOfMeasure && controlled === undefined && !group && minimumStock === undefined) {
+            if (!name && !recordNumber && !unitOfMeasure && controlled === undefined && minimumStock === undefined) {
                 throw new SystemError("Nenhum dado fornecido para atualização");
             }
 
@@ -86,7 +87,6 @@ export class MerchandiseTypeController {
             if (recordNumber) merchandiseTypeData.recordNumber = recordNumber;
             if (unitOfMeasure) merchandiseTypeData.unitOfMeasure = unitOfMeasure;
             if (controlled !== undefined) merchandiseTypeData.controlled = Boolean(controlled);
-            if (group) merchandiseTypeData.group = group as MerchandiseGroup;
             if (minimumStock !== undefined) merchandiseTypeData.minimumStock = Number(minimumStock);
 
             const updatedMerchandiseType = await merchandiseTypeService.updateMerchandiseType(id, merchandiseTypeData);

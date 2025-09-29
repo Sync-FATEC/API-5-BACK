@@ -7,6 +7,12 @@ export type MerchandiseTypeEnum = {
     status: MerchandiseStatus;
 }
 
+export type MerchandiseCreateByRecordNumber = {
+    recordNumber: string;
+    quantity: number;
+    status: MerchandiseStatus;
+}
+
 export type StockAlert = {
     typeId: string;
     typeName: string;

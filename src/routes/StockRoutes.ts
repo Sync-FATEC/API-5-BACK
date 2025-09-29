@@ -77,7 +77,7 @@ router.get("/:userId", stockController.getStockByUser);
  *       403:
  *         description: Acesso negado - Requer role ADMIN
  */
-router.post("/", AuthMiddleware.requireRole(RoleEnum.ADMIN), stockController.createStock);
+router.post("/", stockController.createStock);
 
 /**
  * @swagger
@@ -127,7 +127,7 @@ router.post("/", AuthMiddleware.requireRole(RoleEnum.ADMIN), stockController.cre
  *       403:
  *         description: Acesso negado - Requer role ADMIN
  */
-router.put("/:stockId", AuthMiddleware.requireRole(RoleEnum.ADMIN), stockController.updateStock);
+router.put("/:stockId", stockController.updateStock);
 
 /**
  * @swagger
@@ -155,7 +155,7 @@ router.put("/:stockId", AuthMiddleware.requireRole(RoleEnum.ADMIN), stockControl
  *       403:
  *         description: Acesso negado - Requer role ADMIN
  */
-router.delete("/:stockId", AuthMiddleware.requireRole(RoleEnum.ADMIN), stockController.deleteStock);
+router.delete("/:stockId", stockController.deleteStock);
 
 /**
  * @swagger

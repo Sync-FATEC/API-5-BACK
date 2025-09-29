@@ -230,7 +230,7 @@ router.put("/:id",  merchandiseController.update);
  *       403:
  *         description: Acesso negado - Requer role SUPERVISOR ou superior
  */
-router.delete("/:id", AuthMiddleware.requireRole(RoleEnum.SUPERVISOR), merchandiseController.delete);
+router.delete("/:id", merchandiseController.delete);
 
 /**
  * @swagger

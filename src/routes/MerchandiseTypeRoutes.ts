@@ -8,15 +8,64 @@ const router = Router();
 
 /**
  * @swagger
- * /merchandise-types:
+ * tags:
+ *   name: MerchandiseTypes
+ *   description: Gestão de tipos de mercadorias
+ * components:
+ *   schemas:
+ *     MerchandiseType:
+ *       type: object
+ *       properties:
+ *         id:
+ *           type: string
+ *           format: uuid
+ *         name:
+ *           type: string
+ *           example: Medicamento Analgésico
+ *         recordNumber:
+ *           type: string
+ *           example: MED001
+ *         unitOfMeasure:
+ *           type: string
+ *           example: Comprimido
+ *         controlled:
+ *           type: boolean
+ *           example: true
+ *         group:
+ *           type: string
+ *           enum: [Medical, Almox]
+ *           example: Medical
+ *         minimumStock:
+ *           type: number
+ *           example: 100
+ *         stockId:
+ *           type: string
+ *           format: uuid
+ *           example: 123e4567-e89b-12d3-a456-426614174000
+ *         stock:
+ *           type: object
+ *           description: Informações do stock associado
+ */
+
+/**
+ * @swagger
+ * /merchandise-types/{stockId}:
  *   get:
- *     summary: Lista todos os tipos de produto
+ *     summary: Lista tipos de produto de um stock específico
  *     tags: [MerchandiseTypes]
  *     security:
  *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: stockId
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *         description: ID do stock para filtrar os tipos de produto
  *     responses:
  *       200:
- *         description: Lista de tipos de produto
+ *         description: Lista de tipos de produto do stock especificado
  *         content:
  *           application/json:
  *             schema:
@@ -28,11 +77,11 @@ const router = Router();
  *       403:
  *         description: Acesso negado - Requer role SOLDADO ou superior
  */
-router.get("/",  merchandiseTypeController.listAll);
+router.get("/:stockId", merchandiseTypeController.listAll);
 
 /**
  * @swagger
- * /merchandise-types/{id}:
+ * /merchandise-types/details/{id}:
  *   get:
  *     summary: Busca tipo de produto por ID
  *     tags: [MerchandiseTypes]
@@ -60,7 +109,7 @@ router.get("/",  merchandiseTypeController.listAll);
  *       403:
  *         description: Acesso negado - Requer role SOLDADO ou superior
  */
-router.get("/:id",  merchandiseTypeController.getById);
+router.get("/details/:id", merchandiseTypeController.getById);
 
 /**
  * @swagger
@@ -77,36 +126,42 @@ router.get("/:id",  merchandiseTypeController.getById);
  *           schema:
  *             type: object
  *             required:
- *               - name
- *               - recordNumber
- *               - unitOfMeasure
- *               - controlled
- *               - group
- *               - minimumStock
- *             properties:
- *               name:
- *                 type: string
- *                 example: "Caneta Azul"
- *               recordNumber:
- *                 type: string
- *                 example: "REC001"
- *               unitOfMeasure:
- *                 type: string
- *                 example: "unidade"
- *               quantityTotal:
- *                 type: number
- *                 default: 0
- *                 example: 100
- *               controlled:
- *                 type: boolean
- *                 example: true
- *               group:
- *                 type: string
- *                 enum: [MATERIAL_ESCRITORIO, LIMPEZA, MANUTENCAO, OUTROS]
- *                 example: "MATERIAL_ESCRITORIO"
- *               minimumStock:
- *                 type: number
- *                 example: 10
+               - name
+               - recordNumber
+               - unitOfMeasure
+               - controlled
+               - group
+               - minimumStock
+               - stockId
+             properties:
+               name:
+                 type: string
+                 example: "Caneta Azul"
+               recordNumber:
+                 type: string
+                 example: "REC001"
+               unitOfMeasure:
+                 type: string
+                 example: "unidade"
+               quantityTotal:
+                 type: number
+                 default: 0
+                 example: 100
+               controlled:
+                 type: boolean
+                 example: true
+               group:
+                 type: string
+                 enum: [MATERIAL_ESCRITORIO, LIMPEZA, MANUTENCAO, OUTROS]
+                 example: "MATERIAL_ESCRITORIO"
+               minimumStock:
+                 type: number
+                 example: 10
+               stockId:
+                 type: string
+                 format: uuid
+                 example: "123e4567-e89b-12d3-a456-426614174000"
+                 description: "ID do stock ao qual o tipo de mercadoria pertence"
  *     responses:
  *       201:
  *         description: Tipo de produto criado com sucesso
@@ -121,7 +176,7 @@ router.get("/:id",  merchandiseTypeController.getById);
  *       403:
  *         description: Acesso negado - Requer role SOLDADO ou superior
  */
-router.post("/",  merchandiseTypeController.create);
+router.post("/", merchandiseTypeController.create);
 
 /**
  * @swagger
@@ -184,7 +239,7 @@ router.post("/",  merchandiseTypeController.create);
  *       403:
  *         description: Acesso negado - Requer role SOLDADO ou superior
  */
-router.put("/:id",  merchandiseTypeController.update);
+router.put("/:id", merchandiseTypeController.update);
 
 /**
  * @swagger
@@ -212,7 +267,7 @@ router.put("/:id",  merchandiseTypeController.update);
  *       403:
  *         description: Acesso negado - Requer role SUPERVISOR ou superior
  */
-router.delete("/:id", AuthMiddleware.requireRole(RoleEnum.SUPERVISOR), merchandiseTypeController.delete);
+router.delete("/:id", merchandiseTypeController.delete);
 
 /**
  * @swagger
