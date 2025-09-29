@@ -1,5 +1,3 @@
-# API-5-BACK
-Repositório para o backend
 # Sistema de Controle de Estoque - Backend
 
 <div align="center">
@@ -36,74 +34,52 @@ Este backend é responsável por:
 
 ## 📚 Documentação da API
 
-### Endpoints de Autenticação
-```http
-POST /auth/login            # Login do usuário
-POST /auth/register         # Registro de novo usuário
-PUT  /auth/change-password  # Alterar senha
-GET  /auth/profile          # Consultar perfil
-# a completar
-```
-
-### Endpoints de Produtos
-```http
-POST   /product/create      # Criar produto
-GET    /product/list        # Listar produtos
-GET    /product/read/:id    # Detalhes de produto
-PUT    /product/update/:id  # Atualizar produto
-DELETE /product/delete/:id  # Excluir produto
-# a completar
-```
-
-### Endpoints de Pedidos
-```http
-POST   /order/create
-GET    /order/list
-GET    /order/read/:id
-PUT    /order/update/:id
-DELETE /order/delete/:id
-# a completar
-```
-
-### Endpoints de Estoque
-```http
-POST   /stock/adjust
-GET    /stock/history
-GET    /stock/alerts
-# a completar
-```
-
-### Endpoints de Relatórios
-```http
-GET /report/consumption
-GET /report/demand
-GET /report/export
-# a completar
-```
-
-## 🚦 Como Executar
-
-### Pré-requisitos
-- Node.js / Python
-- PostgreSQL
-- npm ou yarn
-
-### Instalação
+Acesse a documentação da API em:
 ```bash
-git clone https://github.com/seu-usuario/projeto-backend.git
-cd projeto-backend
+http://localhost:3000/api-docs
+```
+# 🚦 Como Executar
+
+## 📋 Pré-requisitos
+- [Node.js](https://nodejs.org/) ou [Python](https://www.python.org/)  
+- [PostgreSQL](https://www.postgresql.org/)  
+- [npm](https://www.npmjs.com/) ou [yarn](https://yarnpkg.com/) instalado  
+
+---
+
+## 📥 Instalação
+Clone o repositório e instale as dependências:  
+```bash
+git clone https://github.com/Sync-FATEC/API-5-BACK
+cd API-5-BACK/src
 npm install
 ```
 
-Configure o `.env`:
-```bash
-cp .env.example .env
-```
+---
 
-Rode o servidor:
+## ⚙️ Configuração
+Antes de rodar o projeto, é necessário configurar alguns arquivos **não incluídos no repositório** por conterem informações sensíveis:  
+
+- Coloque o arquivo `firebase.json` dentro da pasta:  
+  ```
+  /firebase
+  ```
+
+- Crie ou adicione o arquivo `.env` na **raiz do projeto**:  
+  ```
+  API-5-BACK/.env
+  ```
+
+> ⚠️ Esses arquivos não estão disponíveis neste repositório. Solicite ao responsável pelo projeto ou configure-os conforme a documentação oficial (Firebase e variáveis de ambiente necessárias).  
+
+---
+
+## ▶️ Execução
+Rodar servidor em ambiente de desenvolvimento:  
 ```bash
 npm run dev
 ```
+
 
 ## 📁 Estrutura de Diretórios
 ```
@@ -119,13 +95,10 @@ src/
 ## 👥 Time
 | Nome | Função |
 |------|--------|
-| João Gabriel Solis | Scrum Master |
+| José Eduardo Fernandes | Scrum Master |
 | Ana Laura Moratelli | Product Owner |
 | Arthur Karnas | Desenvolvedora |
 | Erik Yokota | Desenvolvedor |
 | Filipe Colla | Desenvolvedor |
-| José Eduardo Fernandes | Desenvolvedor |
+| João Gabriel Solis | Desenvolvedor |
 | Kauê Francisco | Desenvolvedor |
-
-## 📄 Licença
-MIT
