@@ -14,6 +14,9 @@ export class OrderItem {
     @ManyToOne(() => Order, order => order.orderItems)
     order!: Order;
 
-    @ManyToOne(() => MerchandiseType, merchandise => merchandise.orderItems)
-    merchandise!: MerchandiseType;
+  @ManyToOne(() => MerchandiseType, merchandise => merchandise.orderItems)
+  merchandise!: MerchandiseType;
+
+  @ManyToOne(() => Merchandise)
+  orderItem!: Merchandise;
 }

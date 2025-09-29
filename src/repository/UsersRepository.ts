@@ -180,6 +180,22 @@ export class UsersRepository {
                 throw new SystemError("Usuário não encontrado");
             }
 
+            // Primeiro, desvincular todos os estoques do usuário
+            const { UserStock } = require("../database/entities/UserStock");
+            const userStockRepository = AppDataSource.getRepository(UserStock);
+            
+            // Buscar todas as vinculações do usuário
+            const userStocks = await userStockRepository.find({
+                where: { userId }
+            });
+
+            // Remover todas as vinculações
+            if (userStocks.length > 0) {
+                await userStockRepository.remove(userStocks);
+                console.log(`Desvinculados ${userStocks.length} estoques do usuário ${userId}`);
+            }
+
+            // Agora deletar o usuário
             await repository.remove(user);
             return true;
         } catch (error) {

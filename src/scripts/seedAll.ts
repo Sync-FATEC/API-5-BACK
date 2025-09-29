@@ -472,27 +472,27 @@ async function seedOrderItems(orders: Order[], merchandises: Merchandise[]) {
   const orderItems = [
     {
       order: orders[0],
-      merchandise: merchandises[0],
+      merchandise: merchandises[0].type,
       quantity: 50
     },
     {
       order: orders[1],
-      merchandise: merchandises[1],
+      merchandise: merchandises[1].type,
       quantity: 25
     },
     {
       order: orders[2],
-      merchandise: merchandises[2],
+      merchandise: merchandises[2].type,
       quantity: 5
     },
     {
       order: orders[3],
-      merchandise: merchandises[0],
+      merchandise: merchandises[0].type,
       quantity: 15
     },
     {
       order: orders[4],
-      merchandise: merchandises[1],
+      merchandise: merchandises[1].type,
       quantity: 30
     }
   ];
