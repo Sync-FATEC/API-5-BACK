@@ -380,14 +380,11 @@ async function seedSections() {
   console.log("=== Criando Seções ===");
   const sectionRepository = AppDataSource.getRepository(Section);
   const sections = [
-    { name: "Almoxarifado" },
-    { name: "Farmácia" },
-    { name: "Enfermaria" },
-    { name: "Laboratório" },
-    { name: "Emergência" },
-    { name: "Administração" },
-    { name: "Logística" },
-    { name: "Manutenção" }
+    { name: "Empresa Saúde Total" },
+    { name: "Empresa Vida Plena" },
+    { name: "Empresa Bem Estar" },
+    { name: "Empresa MedPrime" },
+    { name: "Empresa Nova Saúde" },
   ];
   const createdSections: Section[] = [];
   for (const sectionData of sections) {
