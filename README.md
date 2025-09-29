@@ -38,6 +38,7 @@ Acesse a documentação da API em:
 ```bash
 http://localhost:3000/api-docs
 ```
+
 # 🚦 Como Executar
 
 ## 📋 Pré-requisitos
@@ -71,6 +72,14 @@ Antes de rodar o projeto, é necessário configurar alguns arquivos **não inclu
   ```
 
 > ⚠️ Esses arquivos não estão disponíveis neste repositório. Solicite ao responsável pelo projeto ou configure-os conforme a documentação oficial (Firebase e variáveis de ambiente necessárias).  
+
+---
+
+## 🗄️ Criar dados iniciais
+Após configurar o ambiente e antes de iniciar o servidor, rode o seed para criar o usuário administrador padrão no banco de dados:  
+```bash
+npm run seed:admin
+```
 
 ---
 
