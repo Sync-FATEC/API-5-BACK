@@ -81,4 +81,21 @@ export class MerchandiseTypeService {
             throw error;
         }
     }
+
+    async updateQuantityTotal(id: string, quantityTotal: number, userRole: RoleEnum) {
+        try {
+            if (userRole !== RoleEnum.ADMIN) {
+                throw new SystemError("Apenas administradores podem atualizar a quantidade total");
+            }
+
+            if (quantityTotal < 0) {
+                throw new SystemError("A quantidade total não pode ser negativa");
+            }
+
+            return await merchandiseTypeRepository.update(id, { quantityTotal });
+        } catch (error) {
+            console.error("Erro ao atualizar quantidade total:", error);
+            throw error;
+        }
+    }
 }

@@ -6,4 +6,5 @@ export type MerchandiseTypeType = {
     controlled: boolean;
     minimumStock: number;
     stockId: string;
+    quantityTotal?: number;
 }

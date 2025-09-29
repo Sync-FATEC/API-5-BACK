@@ -121,4 +121,32 @@ export class MerchandiseTypeController {
             next(error);
         }
     }
+
+    async updateQuantityTotal(req: Request, res: Response, next: NextFunction) {
+        try {
+            const { id } = req.params;
+            const { quantityTotal } = req.body;
+
+            if (!id) {
+                throw new SystemError("ID do tipo de mercadoria é obrigatório");
+            }
+
+            if (!req.user?.userData?.role) {
+                throw new SystemError("Permissão negada");
+            }
+
+            if (quantityTotal === undefined || quantityTotal === null) {
+                throw new SystemError("Quantidade total é obrigatória");
+            }
+
+            const updatedMerchandiseType = await merchandiseTypeService.updateQuantityTotal(id, Number(quantityTotal), req.user.userData.role);
+            res.status(200).json({
+                success: true,
+                data: updatedMerchandiseType,
+                message: "Quantidade total atualizada com sucesso"
+            });
+        } catch (error) {
+            next(error);
+        }
+    }
 }

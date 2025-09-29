@@ -8,6 +8,48 @@ const router = Router();
 
 /**
  * @swagger
+ * /merchandise-types/{id}/quantity-total:
+ *   patch:
+ *     summary: Atualiza a quantidade total de um tipo de mercadoria (admin)
+ *     tags: [MerchandiseTypes]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *         description: ID do tipo de mercadoria
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               quantityTotal:
+ *                 type: number
+ *                 example: 150
+ *     responses:
+ *       200:
+ *         description: Quantidade total atualizada com sucesso
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/MerchandiseType'
+ *       400:
+ *         description: Dados inválidos
+ *       401:
+ *         description: Não autorizado
+ *       403:
+ *         description: Acesso negado - Requer role ADMIN
+ */
+router.patch('/:id/quantity-total', AuthMiddleware.requireRole(RoleEnum.ADMIN), merchandiseTypeController.updateQuantityTotal);
+
+/**
+ * @swagger
  * tags:
  *   name: MerchandiseTypes
  *   description: Gestão de tipos de mercadorias
