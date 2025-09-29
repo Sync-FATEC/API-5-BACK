@@ -127,4 +127,80 @@ export class UserServices {
       throw error;
     }
   }
+
+  async getAllUsers() {
+    try {
+      const users = await usersRepository.getAllUsers();
+      return users.map(user => ({
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        role: user.role,
+        validUntil: user.validUntil,
+        createdAt: user.createdAt,
+        isActive: user.isActive
+      }));
+    } catch (error) {
+      console.error("Erro ao buscar todos os usuários:", error);
+      throw error;
+    }
+  }
+
+  async updateUser(userId: string, updateData: { name?: string; email?: string; role?: any; isActive?: boolean }) {
+    try {
+      const updatedUser = await usersRepository.updateUser(userId, updateData);
+      return {
+        id: updatedUser.id,
+        email: updatedUser.email,
+        name: updatedUser.name,
+        role: updatedUser.role,
+        validUntil: updatedUser.validUntil,
+        createdAt: updatedUser.createdAt,
+        isActive: updatedUser.isActive
+      };
+    } catch (error) {
+      console.error("Erro ao atualizar usuário:", error);
+      throw error;
+    }
+  }
+
+  async deleteUser(userId: string) {
+    try {
+      await usersRepository.deleteUser(userId);
+      return "Usuário deletado com sucesso";
+    } catch (error) {
+      console.error("Erro ao deletar usuário:", error);
+      throw error;
+    }
+  }
+
+  async linkUserToStock(userId: string, stockId: string, responsibility: string) {
+    try {
+      const userStock = await usersRepository.linkUserToStock(userId, stockId, responsibility);
+      return userStock;
+    } catch (error) {
+      console.error("Erro ao vincular usuário ao estoque:", error);
+      throw error;
+    }
+  }
+
+  async unlinkUserFromStock(userId: string, stockId: string) {
+    try {
+      await usersRepository.unlinkUserFromStock(userId, stockId);
+      return "Usuário desvinculado do estoque com sucesso";
+    } catch (error) {
+      console.error("Erro ao desvincular usuário do estoque:", error);
+      throw error;
+    }
+  }
+
+  async getUserStocks(userId: string) {
+    try {
+      const stocks = await usersRepository.getUserStocks(userId);
+      return stocks;
+    } catch (error) {
+      console.error("Erro ao buscar estoques do usuário:", error);
+      throw error;
+    }
+  }
 }

@@ -3,6 +3,7 @@ import { User } from "../database/entities/User";
 import { SystemError } from "../middlewares/SystemError";
 import { UsersType } from "../types/UsersType";
 import { RoleEnum } from "../database/enums/RoleEnum";
+import { StockResponsibility } from "../database/enums/StockResponsability";
 import { sendPasswordResetEmail, createUserWithEmailAndPassword } from "firebase/auth";
 import { firebaseAuth } from "../index";
 
@@ -122,6 +123,199 @@ export class UsersRepository {
             return user.role
         } catch (error) {
             console.error("Erro ao buscar o role do usuario", error)
+            throw error;
+        }
+    }
+
+    // Função para buscar todos os usuários
+    async getAllUsers() {
+        try {
+            return await repository.find({
+                order: {
+                    createdAt: 'DESC'
+                }
+            });
+        } catch (error) {
+            console.error("Erro ao buscar todos os usuários", error);
+            throw error;
+        }
+    }
+
+    // Função para atualizar usuário
+    async updateUser(userId: string, updateData: { name?: string; email?: string; role?: RoleEnum; isActive?: boolean }) {
+        try {
+            const user = await repository.findOne({
+                where: {
+                    id: userId
+                }
+            });
+
+            if (!user) {
+                throw new SystemError("Usuário não encontrado");
+            }
+
+            // Atualizar apenas os campos fornecidos
+            if (updateData.name !== undefined) user.name = updateData.name;
+            if (updateData.email !== undefined) user.email = updateData.email;
+            if (updateData.role !== undefined) user.role = updateData.role;
+            if (updateData.isActive !== undefined) user.isActive = updateData.isActive;
+
+            return await repository.save(user);
+        } catch (error) {
+            console.error("Erro ao atualizar usuário", error);
+            throw error;
+        }
+    }
+
+    // Função para deletar usuário
+    async deleteUser(userId: string) {
+        try {
+            const user = await repository.findOne({
+                where: {
+                    id: userId
+                }
+            });
+
+            if (!user) {
+                throw new SystemError("Usuário não encontrado");
+            }
+
+            // Primeiro, desvincular todos os estoques do usuário
+            const { UserStock } = require("../database/entities/UserStock");
+            const userStockRepository = AppDataSource.getRepository(UserStock);
+            
+            // Buscar todas as vinculações do usuário
+            const userStocks = await userStockRepository.find({
+                where: { userId }
+            });
+
+            // Remover todas as vinculações
+            if (userStocks.length > 0) {
+                await userStockRepository.remove(userStocks);
+                console.log(`Desvinculados ${userStocks.length} estoques do usuário ${userId}`);
+            }
+
+            // Agora deletar o usuário
+            await repository.remove(user);
+            return true;
+        } catch (error) {
+            console.error("Erro ao deletar usuário", error);
+            throw error;
+        }
+    }
+
+    // Função para vincular usuário a estoque
+    async linkUserToStock(userId: string, stockId: string, responsibility: string) {
+        try {
+            const { UserStock } = require("../database/entities/UserStock");
+            const userStockRepository = AppDataSource.getRepository(UserStock);
+
+            // Verificar se o usuário existe
+            const user = await repository.findOne({ where: { id: userId } });
+            if (!user) {
+                throw new SystemError("Usuário não encontrado");
+            }
+
+            // Verificar se o estoque existe
+            const { Stock } = require("../database/entities/Stock");
+            const stockRepository = AppDataSource.getRepository(Stock);
+            const stock = await stockRepository.findOne({ where: { id: stockId } });
+            if (!stock) {
+                throw new SystemError("Estoque não encontrado");
+            }
+
+            // Validar e converter responsabilidade para o enum
+            let stockResponsibility: StockResponsibility;
+            
+            switch (responsibility.toUpperCase()) {
+                case 'ADMIN':
+                    stockResponsibility = StockResponsibility.ADMIN;
+                    break;
+                case 'MANAGER':
+                case 'SUPERVISOR': // Aceitar SUPERVISOR como MANAGER
+                    stockResponsibility = StockResponsibility.MANAGER;
+                    break;
+                case 'USER':
+                case 'SOLDADO': // Aceitar SOLDADO como USER
+                    stockResponsibility = StockResponsibility.USER;
+                    break;
+                default:
+                    throw new SystemError(`Responsabilidade inválida: ${responsibility}. Valores válidos: ADMIN, MANAGER, USER, SUPERVISOR, SOLDADO`);
+            }
+
+            // Verificar se já existe vinculação
+            const existingLink = await userStockRepository.findOne({
+                where: { userId, stockId }
+            });
+
+            if (existingLink) {
+                // Atualizar responsabilidade se já existe
+                existingLink.responsibility = stockResponsibility;
+                return await userStockRepository.save(existingLink);
+            } else {
+                // Criar nova vinculação
+                const userStock = userStockRepository.create({
+                    userId,
+                    stockId,
+                    responsibility: stockResponsibility
+                });
+                return await userStockRepository.save(userStock);
+            }
+        } catch (error) {
+            console.error("Erro ao vincular usuário ao estoque", error);
+            throw error;
+        }
+    }
+
+    // Função para desvincular usuário de estoque
+    async unlinkUserFromStock(userId: string, stockId: string) {
+        try {
+            const { UserStock } = require("../database/entities/UserStock");
+            const userStockRepository = AppDataSource.getRepository(UserStock);
+
+            const userStock = await userStockRepository.findOne({
+                where: { userId, stockId }
+            });
+
+            if (!userStock) {
+                throw new SystemError("Vinculação não encontrada");
+            }
+
+            await userStockRepository.remove(userStock);
+            return true;
+        } catch (error) {
+            console.error("Erro ao desvincular usuário do estoque", error);
+            throw error;
+        }
+    }
+
+    // Função para buscar estoques de um usuário
+    async getUserStocks(userId: string) {
+        try {
+            console.log(`UsersRepository: Buscando estoques para userId: ${userId}`);
+            
+            const { UserStock } = require("../database/entities/UserStock");
+            const userStockRepository = AppDataSource.getRepository(UserStock);
+
+            const userStocks = await userStockRepository.find({
+                where: { userId },
+                relations: ['stock']
+            });
+
+            console.log(`UsersRepository: Encontrados ${userStocks.length} estoques para o usuário`);
+            console.log(`UsersRepository: Dados dos estoques:`, userStocks);
+
+            const result = userStocks.map(us => ({
+                stockId: us.stockId,
+                stockName: us.stock.name,
+                stockLocation: us.stock.location,
+                responsibility: us.responsibility
+            }));
+
+            console.log(`UsersRepository: Resultado mapeado:`, result);
+            return result;
+        } catch (error) {
+            console.error("Erro ao buscar estoques do usuário", error);
             throw error;
         }
     }

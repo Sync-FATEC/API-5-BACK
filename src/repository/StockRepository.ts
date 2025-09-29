@@ -18,11 +18,8 @@ export class StockRepository {
                 });
             }
 
-            if (!stocks || stocks.length === 0) {
-                throw new SystemError("Nenhum estoque encontrado para o usuário fornecido");
-            }
-
-            return stocks;
+            // Retorna lista vazia se não encontrar estoques ao invés de erro
+            return stocks || [];
         } catch (error) {
             console.error("Erro ao buscar estoques do usuário", error);
             throw error;

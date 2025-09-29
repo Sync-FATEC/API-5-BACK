@@ -85,4 +85,112 @@ export class UserController {
             next(error);
         }
     }
+
+    async getAllUsers(req: Request, res: Response, next: NextFunction) {
+        try {
+            const users = await userServices.getAllUsers();
+            res.status(200).json({
+                success: true,
+                data: { users },
+                message: "Usuários obtidos com sucesso"
+            });
+        } catch (error) {
+            next(error);
+        }
+    }
+
+    async updateUser(req: Request, res: Response, next: NextFunction) {
+        try {
+            const userId = req.params.id;
+            const { name, email, role, isActive } = req.body;
+
+            if (!userId) {
+                throw new SystemError("ID do usuário é obrigatório");
+            }
+
+            const userData = await userServices.updateUser(userId, { name, email, role, isActive });
+            res.status(200).json({
+                success: true,
+                data: userData,
+                message: "Usuário atualizado com sucesso"
+            });
+        } catch (error) {
+            next(error);
+        }
+    }
+
+    async deleteUser(req: Request, res: Response, next: NextFunction) {
+        try {
+            const userId = req.params.id;
+
+            if (!userId) {
+                throw new SystemError("ID do usuário é obrigatório");
+            }
+
+            await userServices.deleteUser(userId);
+            res.status(200).json({
+                success: true,
+                message: "Usuário deletado com sucesso"
+            });
+        } catch (error) {
+            next(error);
+        }
+    }
+
+    async linkUserToStock(req: Request, res: Response, next: NextFunction) {
+        try {
+            const userId = req.params.userId;
+            const { stockId, responsibility } = req.body;
+
+            if (!userId || !stockId || !responsibility) {
+                throw new SystemError("Dados incompletos para vincular usuário ao estoque");
+            }
+
+            const userStock = await userServices.linkUserToStock(userId, stockId, responsibility);
+            res.status(200).json({
+                success: true,
+                data: userStock,
+                message: "Usuário vinculado ao estoque com sucesso"
+            });
+        } catch (error) {
+            next(error);
+        }
+    }
+
+    async unlinkUserFromStock(req: Request, res: Response, next: NextFunction) {
+        try {
+            const { userId, stockId } = req.params;
+
+            if (!userId || !stockId) {
+                throw new SystemError("ID do usuário e estoque são obrigatórios");
+            }
+
+            await userServices.unlinkUserFromStock(userId, stockId);
+            res.status(200).json({
+                success: true,
+                message: "Usuário desvinculado do estoque com sucesso"
+            });
+        } catch (error) {
+            next(error);
+        }
+    }
+
+    async getUserStocks(req: Request, res: Response, next: NextFunction) {
+        try {
+            const userId = req.params.userId;
+
+            if (!userId) {
+                throw new SystemError("ID do usuário é obrigatório");
+            }
+
+            const stocks = await userServices.getUserStocks(userId);
+            res.status(200).json({
+                success: true,
+                data: { stocks },
+                message: "Estoques do usuário obtidos com sucesso"
+            });
+        } catch (error) {
+            next(error);
+        }
+    }
 }
