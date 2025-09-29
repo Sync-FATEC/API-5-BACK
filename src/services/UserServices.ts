@@ -146,7 +146,7 @@ export class UserServices {
     }
   }
 
-  async updateUser(userId: string, updateData: { name?: string; email?: string; role?: string; isActive?: boolean }) {
+  async updateUser(userId: string, updateData: { name?: string; email?: string; role?: any; isActive?: boolean }) {
     try {
       const updatedUser = await usersRepository.updateUser(userId, updateData);
       return {

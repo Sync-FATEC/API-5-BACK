@@ -232,13 +232,15 @@ export class UsersRepository {
                     stockResponsibility = StockResponsibility.ADMIN;
                     break;
                 case 'MANAGER':
+                case 'SUPERVISOR': // Aceitar SUPERVISOR como MANAGER
                     stockResponsibility = StockResponsibility.MANAGER;
                     break;
                 case 'USER':
+                case 'SOLDADO': // Aceitar SOLDADO como USER
                     stockResponsibility = StockResponsibility.USER;
                     break;
                 default:
-                    throw new SystemError(`Responsabilidade inválida: ${responsibility}. Valores válidos: ADMIN, MANAGER, USER`);
+                    throw new SystemError(`Responsabilidade inválida: ${responsibility}. Valores válidos: ADMIN, MANAGER, USER, SUPERVISOR, SOLDADO`);
             }
 
             // Verificar se já existe vinculação
@@ -290,6 +292,8 @@ export class UsersRepository {
     // Função para buscar estoques de um usuário
     async getUserStocks(userId: string) {
         try {
+            console.log(`UsersRepository: Buscando estoques para userId: ${userId}`);
+            
             const { UserStock } = require("../database/entities/UserStock");
             const userStockRepository = AppDataSource.getRepository(UserStock);
 
@@ -298,12 +302,18 @@ export class UsersRepository {
                 relations: ['stock']
             });
 
-            return userStocks.map(us => ({
+            console.log(`UsersRepository: Encontrados ${userStocks.length} estoques para o usuário`);
+            console.log(`UsersRepository: Dados dos estoques:`, userStocks);
+
+            const result = userStocks.map(us => ({
                 stockId: us.stockId,
                 stockName: us.stock.name,
                 stockLocation: us.stock.location,
                 responsibility: us.responsibility
             }));
+
+            console.log(`UsersRepository: Resultado mapeado:`, result);
+            return result;
         } catch (error) {
             console.error("Erro ao buscar estoques do usuário", error);
             throw error;
