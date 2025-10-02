@@ -20,6 +20,7 @@ const sectionController = new SectionController();
  *               items:
  *                 $ref: '#/components/schemas/Section'
  */
+router.get('/:id', (req, res) => sectionController.getAll(req, res));
 router.get('/', (req, res) => sectionController.getAll(req, res));
 
 /**
