@@ -5,7 +5,7 @@ import { UsersType } from "../types/UsersType";
 import { RoleEnum } from "../database/enums/RoleEnum";
 import { StockResponsibility } from "../database/enums/StockResponsability";
 import { sendPasswordResetEmail, createUserWithEmailAndPassword } from "firebase/auth";
-import { firebaseAuth } from "../index";
+import { firebaseAuth, adminFirebase } from "../index";
 
 const repository = AppDataSource.getRepository(User)
 
@@ -195,8 +195,17 @@ export class UsersRepository {
                 console.log(`Desvinculados ${userStocks.length} estoques do usuário ${userId}`);
             }
 
-            // Agora deletar o usuário
+            try {
+                await adminFirebase.auth().deleteUser(user.firebaseUid);
+                console.log(`Usuário removido do Firebase: ${user.firebaseUid}`);
+            } catch (firebaseError) {
+                console.error("Erro ao remover usuário do Firebase:", firebaseError);
+            }
+
+            // Agora deletar o usuário do banco de dados
             await repository.remove(user);
+            console.log(`Usuário removido do banco de dados: ${userId}`);
+            
             return true;
         } catch (error) {
             console.error("Erro ao deletar usuário", error);
