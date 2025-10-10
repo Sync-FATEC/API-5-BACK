@@ -177,17 +177,36 @@ export class UserController {
 
     async getUserStocks(req: Request, res: Response, next: NextFunction) {
         try {
-            const userId = req.params.userId;
-
+            const { userId } = req.params;
+            
             if (!userId) {
                 throw new SystemError("ID do usuário é obrigatório");
             }
 
-            const stocks = await userServices.getUserStocks(userId);
+            const userStocks = await userServices.getUserStocks(userId);
             res.status(200).json({
                 success: true,
-                data: { stocks },
+                data: userStocks,
                 message: "Estoques do usuário obtidos com sucesso"
+            });
+        } catch (error) {
+            next(error);
+        }
+    }
+
+    async changePassword(req: Request, res: Response, next: NextFunction) {
+        try {
+            const { email, currentPassword, newPassword } = req.body;
+
+            if (!email || !currentPassword || !newPassword) {
+                throw new SystemError("Email, senha atual e nova senha são obrigatórios");
+            }
+
+            const result = await userServices.changePassword(email, currentPassword, newPassword);
+            res.status(200).json({
+                success: true,
+                data: result,
+                message: "Senha alterada com sucesso"
             });
         } catch (error) {
             next(error);
