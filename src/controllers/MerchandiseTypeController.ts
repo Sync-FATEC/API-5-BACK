@@ -3,6 +3,7 @@ import { MerchandiseTypeType } from "../types/ProductTypeType";
 import { SystemError } from "../middlewares/SystemError";
 import { MerchandiseTypeService } from "../services/MerchandiseTypeService";
 import { MerchandiseGroup } from "../database/enums/MerchandiseGroup";
+import { getToken } from "../utils/GetUserToken";
 
 const merchandiseTypeService = new MerchandiseTypeService();
 
@@ -73,6 +74,8 @@ export class MerchandiseTypeController {
             const { id } = req.params;
             const { name, recordNumber, unitOfMeasure, controlled, minimumStock } = req.body;
 
+            var userId = getToken(req);
+
             if (!id) {
                 throw new SystemError("ID do tipo de mercadoria é obrigatório");
             }
@@ -139,7 +142,15 @@ export class MerchandiseTypeController {
                 throw new SystemError("Quantidade total é obrigatória");
             }
 
-            const updatedMerchandiseType = await merchandiseTypeService.updateQuantityTotal(id, Number(quantityTotal), req.user.userData.role);
+            const payload = getToken(req);
+
+            const userId = payload?.user_id;
+            if (!userId) {
+                return res.status(401).json({ error: 'Unauthorized' });
+            }
+
+            const updatedMerchandiseType = await merchandiseTypeService.updateQuantityTotal(id, Number(quantityTotal), req.user.userData.role, userId);
+            
             res.status(200).json({
                 success: true,
                 data: updatedMerchandiseType,
