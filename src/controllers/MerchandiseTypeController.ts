@@ -9,10 +9,15 @@ const merchandiseTypeService = new MerchandiseTypeService();
 export class MerchandiseTypeController {
     async create(req: Request, res: Response, next: NextFunction) {
         try {
-            const { name, recordNumber, unitOfMeasure, controlled, minimumStock, stockId } = req.body;
+            const { name, recordNumber, unitOfMeasure, controlled, minimumStock, group, stockId } = req.body;
 
-            if (!name || !recordNumber || !unitOfMeasure || controlled === undefined || minimumStock === undefined || !stockId) {
-                throw new SystemError("Dados incompletos. Name, recordNumber, unitOfMeasure, controlled, minimumStock e stockId são obrigatórios.");
+            if (!name || !recordNumber || !unitOfMeasure || controlled === undefined || minimumStock === undefined || !group || !stockId) {
+                throw new SystemError("Dados incompletos. Name, recordNumber, unitOfMeasure, controlled, minimumStock, group e stockId são obrigatórios.");
+            }
+
+            // Validar se o grupo é válido
+            if (!Object.values(MerchandiseGroup).includes(group)) {
+                throw new SystemError("Grupo inválido. Valores aceitos: " + Object.values(MerchandiseGroup).join(", "));
             }
 
             const merchandiseTypeData: MerchandiseTypeType = {
@@ -21,6 +26,7 @@ export class MerchandiseTypeController {
                 unitOfMeasure,
                 controlled: Boolean(controlled),
                 minimumStock: Number(minimumStock),
+                group,
                 stockId
             };
 
@@ -71,14 +77,19 @@ export class MerchandiseTypeController {
     async update(req: Request, res: Response, next: NextFunction) {
         try {
             const { id } = req.params;
-            const { name, recordNumber, unitOfMeasure, controlled, minimumStock } = req.body;
+            const { name, recordNumber, unitOfMeasure, controlled, minimumStock, group } = req.body;
 
             if (!id) {
                 throw new SystemError("ID do tipo de mercadoria é obrigatório");
             }
 
-            if (!name && !recordNumber && !unitOfMeasure && controlled === undefined && minimumStock === undefined) {
+            if (!name && !recordNumber && !unitOfMeasure && controlled === undefined && minimumStock === undefined && !group) {
                 throw new SystemError("Nenhum dado fornecido para atualização");
+            }
+
+            // Validar grupo se fornecido
+            if (group && !Object.values(MerchandiseGroup).includes(group)) {
+                throw new SystemError("Grupo inválido. Valores aceitos: " + Object.values(MerchandiseGroup).join(", "));
             }
 
             const merchandiseTypeData: Partial<MerchandiseTypeType> = {};
@@ -88,6 +99,7 @@ export class MerchandiseTypeController {
             if (unitOfMeasure) merchandiseTypeData.unitOfMeasure = unitOfMeasure;
             if (controlled !== undefined) merchandiseTypeData.controlled = Boolean(controlled);
             if (minimumStock !== undefined) merchandiseTypeData.minimumStock = Number(minimumStock);
+            if (group) merchandiseTypeData.group = group;
 
             const updatedMerchandiseType = await merchandiseTypeService.updateMerchandiseType(id, merchandiseTypeData);
             res.status(200).json({

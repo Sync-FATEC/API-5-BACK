@@ -2,6 +2,7 @@ import { Entity, PrimaryGeneratedColumn, Column, OneToMany, ManyToOne } from 'ty
 import { Merchandise } from './Merchandise';
 import { OrderItem } from './OrderItem';
 import { Stock } from './Stock';
+import { MerchandiseGroup } from '../enums/MerchandiseGroup';
 
 @Entity()
 export class MerchandiseType {
@@ -25,6 +26,9 @@ export class MerchandiseType {
 
     @Column()
     minimumStock!: number;
+
+    @Column({ type: 'enum', enum: MerchandiseGroup })
+    group!: MerchandiseGroup;
 
     @Column()
     stockId!: string;

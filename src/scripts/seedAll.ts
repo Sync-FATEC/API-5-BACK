@@ -12,6 +12,7 @@ import { UserStock } from "../database/entities/UserStock";
 import { Batch } from "../database/entities/Batch";
 import { MerchandiseType } from "../database/entities/MerchandiseType";
 import { Merchandise, MerchandiseStatus } from "../database/entities/Merchandise";
+import { MerchandiseGroup } from "../database/enums/MerchandiseGroup";
 import { Order } from "../database/entities/Order";
 import { OrderItem } from "../database/entities/OrderItem";
 import { Section } from "../database/entities/Section";
@@ -266,6 +267,7 @@ async function seedMerchandiseTypes(stocks: Stock[]) {
     unitOfMeasure: string;
     quantityTotal: number;
     controlled: boolean;
+    group: MerchandiseGroup;
     minimumStock: number;
     stockId: string;
   }> = [
@@ -275,6 +277,7 @@ async function seedMerchandiseTypes(stocks: Stock[]) {
       unitOfMeasure: "Comprimido",
       quantityTotal: 500,
       controlled: true,
+      group: MerchandiseGroup.ALMOX_VIRTUAL,
       minimumStock: 100,
       stockId: stocks[1].id // Farmácia
     },
@@ -284,6 +287,7 @@ async function seedMerchandiseTypes(stocks: Stock[]) {
       unitOfMeasure: "Unidade",
       quantityTotal: 200,
       controlled: false,
+      group: MerchandiseGroup.EXPEDIENTE,
       minimumStock: 50,
       stockId: stocks[2].id // Almoxarifado
     },
@@ -293,6 +297,7 @@ async function seedMerchandiseTypes(stocks: Stock[]) {
       unitOfMeasure: "Peça",
       quantityTotal: 25,
       controlled: true,
+      group: MerchandiseGroup.PERMANENTE,
       minimumStock: 10,
       stockId: stocks[1].id // Farmácia
     }
@@ -317,6 +322,7 @@ async function seedMerchandiseTypes(stocks: Stock[]) {
     merchandiseType.unitOfMeasure = typeData.unitOfMeasure;
     merchandiseType.quantityTotal = typeData.quantityTotal;
     merchandiseType.controlled = typeData.controlled;
+    merchandiseType.group = typeData.group;
     merchandiseType.minimumStock = typeData.minimumStock;
     merchandiseType.stockId = typeData.stockId;
 
