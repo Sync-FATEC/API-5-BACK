@@ -203,4 +203,22 @@ export class UserServices {
       throw error;
     }
   }
+
+  async changePassword(email: string, currentPassword: string, newPassword: string) {
+    try {
+      // Validar se a nova senha atende aos critérios mínimos
+      if (!newPassword || newPassword.length < 6) {
+        throw new SystemError("A nova senha deve ter pelo menos 6 caracteres");
+      }
+
+      if (currentPassword === newPassword) {
+        throw new SystemError("A nova senha deve ser diferente da senha atual");
+      }
+
+      // Chamar o método do repository para alterar a senha
+      return await usersRepository.changePassword(email, currentPassword, newPassword);
+    } catch (error) {
+      throw error;
+    }
+  }
 }

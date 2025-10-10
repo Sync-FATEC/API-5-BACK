@@ -4,7 +4,7 @@ import { SystemError } from "../middlewares/SystemError";
 import { UsersType } from "../types/UsersType";
 import { RoleEnum } from "../database/enums/RoleEnum";
 import { StockResponsibility } from "../database/enums/StockResponsability";
-import { sendPasswordResetEmail, createUserWithEmailAndPassword } from "firebase/auth";
+import { sendPasswordResetEmail, createUserWithEmailAndPassword, signInWithEmailAndPassword } from "firebase/auth";
 import { firebaseAuth, adminFirebase } from "../index";
 
 const repository = AppDataSource.getRepository(User)
@@ -167,6 +167,41 @@ export class UsersRepository {
         }
     }
 
+    async changePassword(email: string, currentPassword: string, newPassword: string) {
+        try {
+            try {
+                await signInWithEmailAndPassword(firebaseAuth, email, currentPassword);
+            } catch (authError: any) {
+                if (authError.code === 'auth/wrong-password') {
+                    throw new SystemError("Senha atual incorreta");
+                }
+                if (authError.code === 'auth/user-not-found') {
+                    throw new SystemError("Usuário não encontrado");
+                }
+                if (authError.code === 'auth/invalid-email') {
+                    throw new SystemError("Email inválido");
+                }
+                throw new SystemError("Erro ao verificar senha atual");
+            }
+
+            // Buscar o usuário no banco de dados
+            const user = await this.getUserByEmail(email);
+            if (!user) {
+                throw new SystemError("Usuário não encontrado no banco de dados");
+            }
+
+            // Se chegou até aqui, a senha atual está correta, então atualizar para a nova senha
+            await adminFirebase.auth().updateUser(user.firebaseUid, {
+                password: newPassword
+            });
+
+            return { success: true, message: "Senha alterada com sucesso" };
+        } catch (error) {
+            console.error("Erro ao alterar senha:", error);
+            throw error;
+        }
+    }
+
     // Função para deletar usuário
     async deleteUser(userId: string) {
         try {
@@ -192,7 +227,6 @@ export class UsersRepository {
             // Remover todas as vinculações
             if (userStocks.length > 0) {
                 await userStockRepository.remove(userStocks);
-                console.log(`Desvinculados ${userStocks.length} estoques do usuário ${userId}`);
             }
 
             try {
