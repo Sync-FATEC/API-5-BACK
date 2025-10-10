@@ -47,8 +47,10 @@ export class MerchandiseType {
     generateLogs(changes: Partial<MerchandiseTypeType>, user: User): LogMerchandiseType[] {
         const logs: LogMerchandiseType[] = [];
 
+
         // Verificar mudanças no nome
         if (changes.name && this.name !== changes.name) {
+            console.log("Mudança detectada no nome:", this.name, "->", changes.name);
             const log = new LogMerchandiseType();
             log.merchandiseType = this;
             log.user = user;

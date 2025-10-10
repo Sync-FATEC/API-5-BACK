@@ -20,7 +20,7 @@ export class LogMerchandiseType {
     newValue?: string;
 
     @Column()
-    justification!: string;
+    justification?: string;
 
     @ManyToOne(() => User, user => user.logs)
     user!: User;

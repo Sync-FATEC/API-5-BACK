@@ -10,6 +10,18 @@ import { firebaseAuth } from "../index";
 const repository = AppDataSource.getRepository(User)
 
 export class UsersRepository {
+    getById(userId: string) {
+        try {
+            return repository.findOne({
+                where: {
+                    id: userId
+                }
+            })
+        } catch (error) {
+            console.error("Erro ao buscar o usuario", error)
+            throw error
+        }
+    }
 
     // Função para criar o usuarios
     async create(user: UsersType) {

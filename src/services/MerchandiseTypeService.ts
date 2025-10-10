@@ -2,9 +2,12 @@ import { SystemError } from "../middlewares/SystemError";
 import { MerchandiseTypeRepository } from "../repository/MerchandiseTypeRepository";
 import { MerchandiseTypeType } from "../types/ProductTypeType";
 import { RoleEnum } from "../database/enums/RoleEnum";
+import { UsersRepository } from "../repository/UsersRepository";
+import { LogMerchandiseTypeRepository } from "../repository/LogMerchandiseType";
 
 const merchandiseTypeRepository = new MerchandiseTypeRepository();
-
+const userRepository = new UsersRepository();
+const logMerchandiseTypeRepository = new LogMerchandiseTypeRepository()
 export class MerchandiseTypeService {
     async createMerchandiseType(merchandiseType: MerchandiseTypeType) {
         try {
@@ -41,7 +44,7 @@ export class MerchandiseTypeService {
         }
     }
 
-    async updateMerchandiseType(id: string, merchandiseTypeData: Partial<MerchandiseTypeType>) {
+    async updateMerchandiseType(id: string, merchandiseTypeData: Partial<MerchandiseTypeType>, userId: string) {
         try {
             if (merchandiseTypeData.name) {
                 await merchandiseTypeRepository.isValidName(merchandiseTypeData.name, id);
@@ -54,6 +57,24 @@ export class MerchandiseTypeService {
             if (merchandiseTypeData.minimumStock !== undefined && merchandiseTypeData.minimumStock < 0) {
                 throw new SystemError("O estoque mínimo não pode ser negativo");
             }
+
+            let user = await userRepository.getUserByFirebaseId(userId);
+
+            if (!user) {
+                throw new SystemError("Usuário não encontrado");
+            }
+
+            let existingMerchandiseType = await merchandiseTypeRepository.getById(id);
+
+            if (!existingMerchandiseType) {
+                throw new SystemError("Tipo de mercadoria não encontrado");
+            }
+
+            var logs = existingMerchandiseType.generateLogs(merchandiseTypeData, user)
+
+            console.log("Logs gerados:", logs);
+
+            logMerchandiseTypeRepository.create(logs);
 
             return await merchandiseTypeRepository.update(id, merchandiseTypeData);
         } catch (error) {
@@ -82,7 +103,7 @@ export class MerchandiseTypeService {
         }
     }
 
-    async updateQuantityTotal(id: string, quantityTotal: number, userRole: RoleEnum, user) {
+    async updateQuantityTotal(id: string, quantityTotal: number, userRole: RoleEnum, userId: string) {
         try {
             if (userRole !== RoleEnum.ADMIN) {
                 throw new SystemError("Apenas administradores podem atualizar a quantidade total");
@@ -94,13 +115,18 @@ export class MerchandiseTypeService {
 
             var merchandiseType = await merchandiseTypeRepository.getById(id);
 
+            var user = await userRepository.getById(userId);
+            if (!user) {
+                throw new SystemError("Usuário não encontrado");
+            }
+
             if (!merchandiseType) {
                 throw new SystemError("Tipo de mercadoria não encontrado");
             }
 
             const log = merchandiseType.changeTotalQuantity(quantityTotal, "Atualização de quantidade total", user);
 
-
+            logMerchandiseTypeRepository.create([log]);
 
         } catch (error) {
             console.error("Erro ao atualizar quantidade total:", error);

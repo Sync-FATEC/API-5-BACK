@@ -8,156 +8,204 @@ import { getToken } from "../utils/GetUserToken";
 const merchandiseTypeService = new MerchandiseTypeService();
 
 export class MerchandiseTypeController {
-    async create(req: Request, res: Response, next: NextFunction) {
-        try {
-            const { name, recordNumber, unitOfMeasure, controlled, minimumStock, stockId } = req.body;
+  async create(req: Request, res: Response, next: NextFunction) {
+    try {
+      const {
+        name,
+        recordNumber,
+        unitOfMeasure,
+        controlled,
+        minimumStock,
+        stockId,
+      } = req.body;
 
-            if (!name || !recordNumber || !unitOfMeasure || controlled === undefined || minimumStock === undefined || !stockId) {
-                throw new SystemError("Dados incompletos. Name, recordNumber, unitOfMeasure, controlled, minimumStock e stockId são obrigatórios.");
-            }
+      if (
+        !name ||
+        !recordNumber ||
+        !unitOfMeasure ||
+        controlled === undefined ||
+        minimumStock === undefined ||
+        !stockId
+      ) {
+        throw new SystemError(
+          "Dados incompletos. Name, recordNumber, unitOfMeasure, controlled, minimumStock e stockId são obrigatórios."
+        );
+      }
 
-            const merchandiseTypeData: MerchandiseTypeType = {
-                name,
-                recordNumber,
-                unitOfMeasure,
-                controlled: Boolean(controlled),
-                minimumStock: Number(minimumStock),
-                stockId
-            };
+      const merchandiseTypeData: MerchandiseTypeType = {
+        name,
+        recordNumber,
+        unitOfMeasure,
+        controlled: Boolean(controlled),
+        minimumStock: Number(minimumStock),
+        stockId,
+      };
 
-            const merchandiseType = await merchandiseTypeService.createMerchandiseType(merchandiseTypeData);
-            res.status(201).json({
-                success: true,
-                data: merchandiseType,
-                message: "Tipo de mercadoria criado com sucesso"
-            });
-        } catch (error) {
-            next(error);
-        }
+      const merchandiseType =
+        await merchandiseTypeService.createMerchandiseType(merchandiseTypeData);
+      res.status(201).json({
+        success: true,
+        data: merchandiseType,
+        message: "Tipo de mercadoria criado com sucesso",
+      });
+    } catch (error) {
+      next(error);
     }
+  }
 
-    async listAll(req: Request, res: Response, next: NextFunction) {
-        try {
-            const { stockId } = req.params;
-            const merchandiseTypes = await merchandiseTypeService.getAllMerchandiseTypes(stockId);
-            res.status(200).json({
-                success: true,
-                data: merchandiseTypes,
-                message: "Tipos de mercadoria listados com sucesso"
-            });
-        } catch (error) {
-            next(error);
-        }
+  async listAll(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { stockId } = req.params;
+      const merchandiseTypes =
+        await merchandiseTypeService.getAllMerchandiseTypes(stockId);
+      res.status(200).json({
+        success: true,
+        data: merchandiseTypes,
+        message: "Tipos de mercadoria listados com sucesso",
+      });
+    } catch (error) {
+      next(error);
     }
+  }
 
-    async getById(req: Request, res: Response, next: NextFunction) {
-        try {
-            const { id } = req.params;
-            
-            if (!id) {
-                throw new SystemError("ID do tipo de mercadoria é obrigatório");
-            }
+  async getById(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { id } = req.params;
 
-            const merchandiseType = await merchandiseTypeService.getMerchandiseTypeById(id);
-            res.status(200).json({
-                success: true,
-                data: merchandiseType,
-                message: "Tipo de mercadoria encontrado com sucesso"
-            });
-        } catch (error) {
-            next(error);
-        }
+      if (!id) {
+        throw new SystemError("ID do tipo de mercadoria é obrigatório");
+      }
+
+      const merchandiseType =
+        await merchandiseTypeService.getMerchandiseTypeById(id);
+      res.status(200).json({
+        success: true,
+        data: merchandiseType,
+        message: "Tipo de mercadoria encontrado com sucesso",
+      });
+    } catch (error) {
+      next(error);
     }
+  }
 
-    async update(req: Request, res: Response, next: NextFunction) {
-        try {
-            const { id } = req.params;
-            const { name, recordNumber, unitOfMeasure, controlled, minimumStock } = req.body;
+  async update(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { id } = req.params;
+      const { name, recordNumber, unitOfMeasure, controlled, minimumStock } =
+        req.body;
 
-            var userId = getToken(req);
+      var payload = getToken(req);
 
-            if (!id) {
-                throw new SystemError("ID do tipo de mercadoria é obrigatório");
-            }
+      if (!id) {
+        throw new SystemError("ID do tipo de mercadoria é obrigatório");
+      }
 
-            if (!name && !recordNumber && !unitOfMeasure && controlled === undefined && minimumStock === undefined) {
-                throw new SystemError("Nenhum dado fornecido para atualização");
-            }
+      if (
+        !name &&
+        !recordNumber &&
+        !unitOfMeasure &&
+        controlled === undefined &&
+        minimumStock === undefined
+      ) {
+        throw new SystemError("Nenhum dado fornecido para atualização");
+      }
 
-            const merchandiseTypeData: Partial<MerchandiseTypeType> = {};
-            
-            if (name) merchandiseTypeData.name = name;
-            if (recordNumber) merchandiseTypeData.recordNumber = recordNumber;
-            if (unitOfMeasure) merchandiseTypeData.unitOfMeasure = unitOfMeasure;
-            if (controlled !== undefined) merchandiseTypeData.controlled = Boolean(controlled);
-            if (minimumStock !== undefined) merchandiseTypeData.minimumStock = Number(minimumStock);
+      const merchandiseTypeData: Partial<MerchandiseTypeType> = {};
 
-            const updatedMerchandiseType = await merchandiseTypeService.updateMerchandiseType(id, merchandiseTypeData);
-            res.status(200).json({
-                success: true,
-                data: updatedMerchandiseType,
-                message: "Tipo de mercadoria atualizado com sucesso"
-            });
-        } catch (error) {
-            next(error);
-        }
+      if (name) merchandiseTypeData.name = name;
+      if (recordNumber) merchandiseTypeData.recordNumber = recordNumber;
+      if (unitOfMeasure) merchandiseTypeData.unitOfMeasure = unitOfMeasure;
+      if (controlled !== undefined)
+        merchandiseTypeData.controlled = Boolean(controlled);
+      if (minimumStock !== undefined)
+        merchandiseTypeData.minimumStock = Number(minimumStock);
+
+      const userId = payload?.user_id;
+      if (!userId) {
+        return res.status(401).json({ error: "Unauthorized" });
+      }
+
+
+      const updatedMerchandiseType =
+        await merchandiseTypeService.updateMerchandiseType(
+          id,
+          merchandiseTypeData,
+          userId
+        );
+      res.status(200).json({
+        success: true,
+        data: updatedMerchandiseType,
+        message: "Tipo de mercadoria atualizado com sucesso",
+      });
+    } catch (error) {
+      next(error);
     }
+  }
 
-    async delete(req: Request, res: Response, next: NextFunction) {
-        try {
-            const { id } = req.params;
-            
-            if (!id) {
-                throw new SystemError("ID do tipo de mercadoria é obrigatório");
-            }
+  async delete(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { id } = req.params;
 
-            if (!req.user?.userData?.role) {
-                throw new SystemError("Permissão negada");
-            }
+      if (!id) {
+        throw new SystemError("ID do tipo de mercadoria é obrigatório");
+      }
 
-            await merchandiseTypeService.deleteMerchandiseType(id, req.user.userData.role);
-            res.status(200).json({
-                success: true,
-                message: "Tipo de mercadoria removido com sucesso"
-            });
-        } catch (error) {
-            next(error);
-        }
+      if (!req.user?.userData?.role) {
+        throw new SystemError("Permissão negada");
+      }
+
+      await merchandiseTypeService.deleteMerchandiseType(
+        id,
+        req.user.userData.role
+      );
+      res.status(200).json({
+        success: true,
+        message: "Tipo de mercadoria removido com sucesso",
+      });
+    } catch (error) {
+      next(error);
     }
+  }
 
-    async updateQuantityTotal(req: Request, res: Response, next: NextFunction) {
-        try {
-            const { id } = req.params;
-            const { quantityTotal } = req.body;
+  async updateQuantityTotal(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { id } = req.params;
+      const { quantityTotal } = req.body;
 
-            if (!id) {
-                throw new SystemError("ID do tipo de mercadoria é obrigatório");
-            }
+      if (!id) {
+        throw new SystemError("ID do tipo de mercadoria é obrigatório");
+      }
 
-            if (!req.user?.userData?.role) {
-                throw new SystemError("Permissão negada");
-            }
+      if (!req.user?.userData?.role) {
+        throw new SystemError("Permissão negada");
+      }
 
-            if (quantityTotal === undefined || quantityTotal === null) {
-                throw new SystemError("Quantidade total é obrigatória");
-            }
+      if (quantityTotal === undefined || quantityTotal === null) {
+        throw new SystemError("Quantidade total é obrigatória");
+      }
 
-            const payload = getToken(req);
+      const payload = getToken(req);
 
-            const userId = payload?.user_id;
-            if (!userId) {
-                return res.status(401).json({ error: 'Unauthorized' });
-            }
+      const userId = payload?.user_id;
+      if (!userId) {
+        return res.status(401).json({ error: "Unauthorized" });
+      }
 
-            const updatedMerchandiseType = await merchandiseTypeService.updateQuantityTotal(id, Number(quantityTotal), req.user.userData.role, userId);
-            
-            res.status(200).json({
-                success: true,
-                data: updatedMerchandiseType,
-                message: "Quantidade total atualizada com sucesso"
-            });
-        } catch (error) {
-            next(error);
-        }
+      const updatedMerchandiseType =
+        await merchandiseTypeService.updateQuantityTotal(
+          id,
+          Number(quantityTotal),
+          req.user.userData.role,
+          userId
+        );
+
+      res.status(200).json({
+        success: true,
+        data: updatedMerchandiseType,
+        message: "Quantidade total atualizada com sucesso",
+      });
+    } catch (error) {
+      next(error);
     }
+  }
 }
