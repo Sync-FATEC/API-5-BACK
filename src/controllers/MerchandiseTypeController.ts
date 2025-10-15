@@ -208,4 +208,22 @@ export class MerchandiseTypeController {
       next(error);
     }
   }
-}
+
+  async listLogs(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { id } = req.params;
+      if (!id) {
+        throw new SystemError("ID do tipo de mercadoria é obrigatório");
+      }
+
+      const logs = await merchandiseTypeService.listLogs(id);
+      res.status(200).json({
+        success: true,
+        data: logs,
+        message: "Logs do tipo de mercadoria encontrados com sucesso",
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+}       

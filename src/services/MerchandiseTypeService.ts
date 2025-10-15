@@ -44,6 +44,19 @@ export class MerchandiseTypeService {
         }
     }
 
+    async listLogs(id: string) {
+        try {
+            const merchandiseType = await merchandiseTypeRepository.getById(id);
+            if (!merchandiseType) {
+                throw new SystemError("Tipo de mercadoria não encontrado");
+            }
+            return await logMerchandiseTypeRepository.getByMerchandiseTypeId(id);
+        } catch (error) {
+            console.error("Erro ao listar logs do tipo de mercadoria:", error);
+            throw error;
+        }
+    }
+
     async updateMerchandiseType(id: string, merchandiseTypeData: Partial<MerchandiseTypeType>, userId: string) {
         try {
             if (merchandiseTypeData.name) {
