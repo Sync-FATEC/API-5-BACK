@@ -27,8 +27,8 @@ export class MerchandiseType {
     @Column()
     minimumStock!: number;
 
-    @Column({ type: 'enum', enum: MerchandiseGroup })
-    group!: MerchandiseGroup;
+    @Column({ type: 'enum', enum: MerchandiseGroup, nullable: true, default: MerchandiseGroup.EXPEDIENTE })
+    group!: MerchandiseGroup | null;
 
     @Column()
     stockId!: string;
