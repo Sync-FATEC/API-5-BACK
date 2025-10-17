@@ -54,14 +54,6 @@ const router = Router();
  *           type: boolean
  *           description: Status ativo/inativo do fornecedor
  *           example: true
- *         createdAt:
- *           type: string
- *           format: date-time
- *           description: Data de criação
- *         updatedAt:
- *           type: string
- *           format: date-time
- *           description: Data da última atualização
  *     SupplierCreate:
  *       type: object
  *       required:
@@ -120,8 +112,6 @@ const router = Router();
  *         emailSecundario:
  *           type: string
  *           format: email
- *         isActive:
- *           type: boolean
  */
 
 /**
@@ -360,165 +350,5 @@ router.put("/:id", supplierController.update);
  *         description: Fornecedor não encontrado
  */
 router.delete("/:id", supplierController.delete);
-
-/**
- * @swagger
- * /suppliers/{id}/reactivate:
- *   patch:
- *     summary: Reativar fornecedor
- *     tags: [Fornecedores]
- *     parameters:
- *       - in: path
- *         name: id
- *         required: true
- *         schema:
- *           type: string
- *           format: uuid
- *         description: ID do fornecedor
- *     responses:
- *       200:
- *         description: Fornecedor reativado com sucesso
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 success:
- *                   type: boolean
- *                   example: true
- *                 data:
- *                   $ref: '#/components/schemas/Supplier'
- *                 message:
- *                   type: string
- *                   example: "Fornecedor reativado com sucesso"
- *       404:
- *         description: Fornecedor não encontrado
- */
-router.patch("/:id/reactivate", supplierController.reactivate);
-
-/**
- * @swagger
- * /suppliers/cnpj/{cnpj}:
- *   get:
- *     summary: Buscar fornecedor por CNPJ
- *     tags: [Fornecedores]
- *     parameters:
- *       - in: path
- *         name: cnpj
- *         required: true
- *         schema:
- *           type: string
- *         description: CNPJ do fornecedor (com ou sem formatação)
- *         example: "12345678000190"
- *     responses:
- *       200:
- *         description: Fornecedor encontrado com sucesso
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 success:
- *                   type: boolean
- *                   example: true
- *                 data:
- *                   $ref: '#/components/schemas/Supplier'
- *                 message:
- *                   type: string
- *                   example: "Fornecedor encontrado com sucesso"
- *       404:
- *         description: Fornecedor não encontrado
- */
-router.get("/cnpj/:cnpj", supplierController.getByCnpj);
-
-/**
- * @swagger
- * /suppliers/validate/cnpj/{cnpj}:
- *   get:
- *     summary: Validar se CNPJ está disponível
- *     tags: [Fornecedores]
- *     parameters:
- *       - in: path
- *         name: cnpj
- *         required: true
- *         schema:
- *           type: string
- *         description: CNPJ para validação
- *       - in: query
- *         name: excludeId
- *         schema:
- *           type: string
- *           format: uuid
- *         description: ID do fornecedor a ser excluído da verificação (útil para edição)
- *     responses:
- *       200:
- *         description: CNPJ disponível
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 success:
- *                   type: boolean
- *                   example: true
- *                 isValid:
- *                   type: boolean
- *                   example: true
- *                 message:
- *                   type: string
- *                   example: "CNPJ disponível"
- *       400:
- *         description: CNPJ já cadastrado
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 success:
- *                   type: boolean
- *                   example: false
- *                 isValid:
- *                   type: boolean
- *                   example: false
- *                 message:
- *                   type: string
- *                   example: "CNPJ já cadastrado"
- */
-router.get("/validate/cnpj/:cnpj", supplierController.validateCnpj);
-
-/**
- * @swagger
- * /suppliers/stats:
- *   get:
- *     summary: Obter estatísticas de fornecedores
- *     tags: [Fornecedores]
- *     responses:
- *       200:
- *         description: Estatísticas obtidas com sucesso
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 success:
- *                   type: boolean
- *                   example: true
- *                 data:
- *                   type: object
- *                   properties:
- *                     activeCount:
- *                       type: integer
- *                       description: Número de fornecedores ativos
- *                       example: 25
- *                     recentSuppliers:
- *                       type: array
- *                       description: Últimos 5 fornecedores cadastrados
- *                       items:
- *                         $ref: '#/components/schemas/Supplier'
- *                 message:
- *                   type: string
- *                   example: "Estatísticas obtidas com sucesso"
- */
-router.get("/stats", supplierController.getStats);
 
 export default router;
