@@ -9,6 +9,7 @@ import { authMiddleware } from "./middlewares/authContext";
 import { systemErrorHandler } from "./middlewares/SystemError";
 import { initializeApp } from "firebase/app";
 import { getAuth } from "firebase/auth";
+import { OrderScheduler } from "./schedulers/OrderScheduler";
 
 import authRouter from "./routes/authRoutes";
 import stockRouter from "./routes/StockRoutes";
@@ -74,6 +75,12 @@ app.use(systemErrorHandler);
 
 AppDataSource.initialize()
   .then(() => {
-    app.listen(3000, () => console.log("API on http://localhost:3000 \n Swagger on http://localhost:3000/api-docs "));
+    app.listen(3000, () => {
+      console.log("API on http://localhost:3000 \n Swagger on http://localhost:3000/api-docs ");
+      
+      // Iniciar o scheduler para verificar pedidos vencidos a cada 15 minutos
+      const orderScheduler = new OrderScheduler();
+      orderScheduler.startScheduler(15);
+    });
   })
   .catch((err) => console.error("Data Source init error:", err));
