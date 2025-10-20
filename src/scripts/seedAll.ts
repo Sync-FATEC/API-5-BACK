@@ -16,6 +16,7 @@ import { MerchandiseGroup } from "../database/enums/MerchandiseGroup";
 import { Order } from "../database/entities/Order";
 import { OrderItem } from "../database/entities/OrderItem";
 import { Section } from "../database/entities/Section";
+import { Supplier } from "../database/entities/Supplier";
 
 
 config();
@@ -512,6 +513,83 @@ async function seedOrderItems(orders: Order[], merchandises: Merchandise[]) {
   return createdOrderItems;
 }
 
+async function seedSuppliers() {
+  console.log("=== Criando Fornecedores ===");
+  const supplierRepository = AppDataSource.getRepository(Supplier);
+
+  const suppliers = [
+    {
+      razaoSocial: "Tech Solutions Ltda",
+      nomeResponsavel: "João Silva",
+      cargoResponsavel: "Gerente Comercial",
+      cnpj: "12345678000190", // CNPJ sem formatação
+      emailPrimario: "contato@techsolutions.com",
+      emailSecundario: "vendas@techsolutions.com"
+    },
+    {
+      razaoSocial: "Inovação Industrial S.A.",
+      nomeResponsavel: "Maria Santos",
+      cargoResponsavel: "Diretora de Vendas",
+      cnpj: "98765432000110",
+      emailPrimario: "comercial@inovacao.com.br"
+    },
+    {
+      razaoSocial: "Global Supplies Importação Ltda",
+      cnpj: "11222333000144",
+      emailPrimario: "suporte@globalsupplies.com",
+      emailSecundario: "importacao@globalsupplies.com"
+    },
+    {
+      razaoSocial: "Materiais Especializados Eireli",
+      nomeResponsavel: "Carlos Oliveira",
+      cargoResponsavel: "Proprietário",
+      cnpj: "55666777000188",
+      emailPrimario: "carlos@materiaisespecializados.com.br"
+    },
+    {
+      razaoSocial: "Equipamentos Premium Ltda",
+      nomeResponsavel: "Ana Costa",
+      cargoResponsavel: "Coordenadora de Vendas",
+      cnpj: "33444555000122",
+      emailPrimario: "vendas@equipamentospremium.com",
+      emailSecundario: "atendimento@equipamentospremium.com"
+    }
+  ];
+
+  const createdSuppliers: Supplier[] = [];
+
+  for (const supplierData of suppliers) {
+    // Verificar se já existe pelo CNPJ
+    const existingSupplier = await supplierRepository.findOne({
+      where: { cnpj: supplierData.cnpj }
+    });
+
+    if (existingSupplier) {
+      console.log(`Fornecedor ${supplierData.razaoSocial} já existe.`);
+      createdSuppliers.push(existingSupplier);
+      continue;
+    }
+
+    const supplier = new Supplier();
+    supplier.razaoSocial = supplierData.razaoSocial;
+    supplier.nomeResponsavel = supplierData.nomeResponsavel || undefined;
+    supplier.cargoResponsavel = supplierData.cargoResponsavel || undefined;
+    supplier.cnpj = supplierData.cnpj;
+    supplier.emailPrimario = supplierData.emailPrimario;
+    supplier.emailSecundario = supplierData.emailSecundario || undefined;
+    supplier.isActive = true;
+
+    const savedSupplier = await supplierRepository.save(supplier);
+    createdSuppliers.push(savedSupplier);
+
+    // Formatar CNPJ para exibição
+    const cnpjFormatted = supplierData.cnpj.replace(/^(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})$/, '$1.$2.$3/$4-$5');
+    console.log(`Fornecedor criado: ${savedSupplier.razaoSocial} (${cnpjFormatted})`);
+  }
+
+  return createdSuppliers;
+}
+
 async function seedAll() {
   try {
     // Inicializar conexão com o banco de dados
@@ -547,6 +625,9 @@ async function seedAll() {
     // 9. Criar itens de pedido (depende de orders e merchandises)
     const orderItems = await seedOrderItems(orders, merchandises);
 
+    // 10. Criar fornecedores (independente)
+    const suppliers = await seedSuppliers();
+
     console.log("\n🎉 Seed completo executado com sucesso!");
     console.log("📊 Resumo:");
     console.log(`   - ${users.length} usuários criados`);
@@ -558,6 +639,7 @@ async function seedAll() {
     console.log(`   - ${sections.length} seções criadas`);
     console.log(`   - ${orders.length} pedidos criados`);
     console.log(`   - ${orderItems.length} itens de pedido criados`);
+    console.log(`   - ${suppliers.length} fornecedores criados`);
 
   } catch (error) {
     console.error("❌ Erro ao executar seed:", error);

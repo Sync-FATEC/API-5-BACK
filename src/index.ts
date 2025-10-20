@@ -16,6 +16,7 @@ import merchandiseRouter from "./routes/MerchandiseRoutes";
 import merchandiseTypeRouter from "./routes/MerchandiseTypeRoutes";
 import sectionRouter from "./routes/SectionRoutes";
 import orderRouter from "./routes/OrderRoutes";
+import supplierRouter from "./routes/SupplierRoutes";
 import reportRouter from "./routes/ReportRoutes";
 
 const firebaseConfig = {
@@ -67,6 +68,7 @@ app.use("/orders", orderRouter);
 app.use("/merchandise", merchandiseRouter);
 app.use("/merchandise-types", merchandiseTypeRouter);
 app.use("/stocks", stockRouter);
+app.use("/suppliers", supplierRouter);
 app.use("/reports", reportRouter);
 app.use(systemErrorHandler);
 
