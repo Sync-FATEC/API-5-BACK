@@ -7,23 +7,30 @@ const userServices = new UserServices();
 export class UserController {
     async create(req: Request, res: Response, next: NextFunction) {
         try {
-            const { name, email, role } = req.body;
+            const users = req.body.users;
 
-            if (!name || !email || !role) {
-                throw new SystemError("Dados incompletos");
+            if (!users || !Array.isArray(users) || users.length === 0) {
+                throw new SystemError("Lista de usuários é obrigatória");
             }
 
-            const userType = {
-                email,
-                name,
-                role,
-            } as UsersType
+            for (const user of users) {
+                if (!user.name || !user.email || !user.role) {
+                    throw new SystemError("Dados incompletos em um ou mais usuários");
+                }
+            }
 
-            const user = await userServices.createUser(userType);
+            const userTypes = users.map(user => ({
+                email: user.email,
+                name: user.name,
+                role: user.role,
+            } as UsersType));
+
+            await Promise.all(userTypes.map(userType => userServices.createUser(userType)));
+
             res.status(201).json({
                 success: true,
-                data: user,
-                message: "Usuário criado com sucesso"
+                data: userTypes,
+                message: "Usuários criados com sucesso"
             });
         } catch (error) {
             next(error);

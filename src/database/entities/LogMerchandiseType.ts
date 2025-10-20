@@ -22,6 +22,9 @@ export class LogMerchandiseType {
     @Column({ nullable: true })
     justification?: string;
 
+    @Column()
+    dateCreated: Date = new Date();
+
     @ManyToOne(() => User, user => user.logs)
     user!: User;
 
