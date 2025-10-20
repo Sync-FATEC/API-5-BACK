@@ -111,27 +111,27 @@ export class MerchandiseService {
                 const totalQuantity = parseInt(item.totalQuantity);
                 const minimumStock = parseInt(item.minimumStock);
                 
-                // Calcular a diferença entre quantidade atual e quantidade mínima
-                const differenceFromMinimum = totalQuantity - minimumStock;
+                // Calcular o percentual do estoque atual em relação ao mínimo
+                const percentageAboveMinimum = ((totalQuantity - minimumStock) / minimumStock) * 100;
                 
-                // Determinar o tipo de alerta baseado na diferença
+                // Determinar o tipo de alerta baseado no percentual
                 let alertType: 'normal' | 'warning' | 'critical' = 'normal';
                 let alertMessage = '';
                 
-                if (differenceFromMinimum <= 0) {
+                if (totalQuantity <= minimumStock) {
                     // Estoque abaixo ou no limite mínimo
                     alertType = 'critical';
                     alertMessage = 'Estoque abaixo do mínimo - Reposição urgente necessária';
-                } else if (differenceFromMinimum <= 50) {
-                    // Diferença de até 50 unidades acima do mínimo
+                } else if (percentageAboveMinimum <= 50) {
+                    // Até 50% acima do mínimo
                     alertType = 'critical';
                     alertMessage = 'Estoque crítico - Próximo do limite mínimo';
-                } else if (differenceFromMinimum <= 100) {
-                    // Diferença de até 100 unidades acima do mínimo
+                } else if (percentageAboveMinimum <= 85) {
+                    // Até 85% acima do mínimo
                     alertType = 'warning';
                     alertMessage = 'Estoque baixo - Atenção necessária';
                 }
-                // Se a diferença for > 100, alertType permanece 'normal'
+                // Se o percentual for > 85%, alertType permanece 'normal'
                 
                 return {
                     typeId: item.typeId,
