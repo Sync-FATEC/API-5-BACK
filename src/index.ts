@@ -16,6 +16,7 @@ import merchandiseRouter from "./routes/MerchandiseRoutes";
 import merchandiseTypeRouter from "./routes/MerchandiseTypeRoutes";
 import sectionRouter from "./routes/SectionRoutes";
 import orderRouter from "./routes/OrderRoutes";
+import reportRouter from "./routes/ReportRoutes";
 
 const firebaseConfig = {
   apiKey: process.env.FIREBASE_API_KEY,
@@ -66,6 +67,7 @@ app.use("/orders", orderRouter);
 app.use("/merchandise", merchandiseRouter);
 app.use("/merchandise-types", merchandiseTypeRouter);
 app.use("/stocks", stockRouter);
+app.use("/reports", reportRouter);
 app.use(systemErrorHandler);
 
 AppDataSource.initialize()
