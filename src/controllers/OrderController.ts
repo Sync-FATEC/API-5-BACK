@@ -55,6 +55,27 @@ export class OrderController {
 		if (!order) return res.status(404).json({ message: 'Order not found' });
 		return res.json(order);
 	}
+	
+	async updateWithdrawalDate(req: Request, res: Response) {
+		const { id } = req.params;
+		const { withdrawalDate } = req.body;
+		
+		// Se withdrawalDate não for fornecido ou for null, define como null
+		// Caso contrário, tenta converter para Date
+		let parsedDate: Date | null = null;
+		
+		if (withdrawalDate) {
+			parsedDate = new Date(withdrawalDate);
+			// Validar se a data é válida
+			if (isNaN(parsedDate.getTime())) {
+				return res.status(400).json({ message: 'Invalid date format' });
+			}
+		}
+		
+		const order = await orderService.updateWithdrawalDate(id, parsedDate);
+		if (!order) return res.status(404).json({ message: 'Order not found' });
+		return res.json(order);
+	}
 
 	async delete(req: Request, res: Response) {
 		const { id } = req.params;

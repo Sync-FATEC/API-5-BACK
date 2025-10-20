@@ -61,8 +61,21 @@ export class OrderService {
 		// Criar Order primeiro
 		const order = new Order();
 		order.creationDate = orderData.creationDate;
-		order.withdrawalDate = orderData.withdrawalDate ?? new Date();
-		order.status = orderData.status;
+		
+		// Lógica da data de retirada:
+		// Se a data foi fornecida, o pedido deve ser finalizado
+		// Se não, o pedido fica em aberto
+		if (orderData.withdrawalDate) {
+			order.withdrawalDate = orderData.withdrawalDate;
+			order.status = 'Finalizado';
+		} else {
+			// TypeORM irá tratar como NULL quando salvo no banco
+			// @ts-ignore - Ignorando erro de tipagem pois TypeORM aceita isso
+			order.withdrawalDate = null;
+			// Mantém o status informado caso não tenha data de retirada
+			order.status = orderData.status;
+		}
+		
 		order.section = section;
 		order.stock = stock;
 
@@ -134,8 +147,19 @@ export class OrderService {
 
 			// Atualizar dados básicos
 			order.creationDate = orderData.creationDate;
-			order.withdrawalDate = orderData.withdrawalDate ?? new Date();
-			order.status = orderData.status;
+			
+			// Aplicando a mesma lógica de data de retirada na atualização
+			if (orderData.withdrawalDate) {
+				order.withdrawalDate = orderData.withdrawalDate;
+				order.status = 'Finalizado';
+			} else {
+				// TypeORM irá tratar como NULL quando salvo no banco
+				// @ts-ignore - Ignorando erro de tipagem pois TypeORM aceita isso
+				order.withdrawalDate = null;
+				// Mantém o status informado caso não tenha data de retirada
+				order.status = orderData.status;
+			}
+			
 			order.section = section;
 			order.stock = stock;
 
@@ -190,6 +214,45 @@ export class OrderService {
 
 		// Atualizar apenas o status
 		order.status = status;
+		
+		const savedOrder = await OrderRepository.save(order);
+		
+		return {
+			id: savedOrder.id,
+			creationDate: savedOrder.creationDate,
+			withdrawalDate: savedOrder.withdrawalDate,
+			status: savedOrder.status,
+			sectionName: savedOrder.section.name,
+			sectionId: savedOrder.section?.id ?? '',
+			orderItems: savedOrder.orderItems.map(item => ({
+				id: item.id,
+				quantity: item.quantity,
+				merchandiseId: item.merchandiseType?.id ?? '',
+				merchandiseName: item.merchandiseType.name
+			}))
+		};
+	}
+	
+	// Método específico para atualizar a data de retirada com a lógica especial
+	async updateWithdrawalDate(id: string, withdrawalDate: Date | null): Promise<OrderViewModel | null> {
+		const order = await OrderRepository.findOne({ 
+			where: { id, isActive: true }, 
+			relations: ['orderItems', 'orderItems.merchandiseType', 'section', 'stock'] 
+		});
+		
+		if (!order) return null;
+
+		// Se a data de retirada foi fornecida, finaliza o pedido
+		// Se a data for null, mantém o pedido em aberto
+		if (withdrawalDate) {
+			order.withdrawalDate = withdrawalDate;
+			order.status = 'Finalizado';
+		} else {
+			// @ts-ignore - Ignorando erro de tipagem pois TypeORM aceita isso
+			order.withdrawalDate = null;
+			// Se está removendo a data de retirada, coloca o status como "Em andamento"
+			order.status = 'Em andamento';
+		}
 		
 		const savedOrder = await OrderRepository.save(order);
 		

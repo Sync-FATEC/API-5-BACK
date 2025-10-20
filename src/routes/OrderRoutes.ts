@@ -200,6 +200,46 @@ router.patch('/:id/status', (req, res) => orderController.updateStatus(req, res)
 
 /**
  * @swagger
+ * /orders/{id}/withdrawal-date:
+ *   patch:
+ *     summary: Atualiza a data de retirada de um pedido
+ *     tags: [Orders]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *         description: ID do pedido
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               withdrawalDate:
+ *                 type: string
+ *                 format: date
+ *                 description: Nova data de retirada do pedido. Se fornecido, o pedido será marcado como finalizado. Se nulo, o pedido permanecerá em aberto.
+ *                 example: "2024-10-15"
+ *     responses:
+ *       200:
+ *         description: Data de retirada atualizada com sucesso
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Order'
+ *       400:
+ *         description: Formato de data inválido
+ *       404:
+ *         description: Pedido não encontrado
+ */
+router.patch('/:id/withdrawal-date', (req, res) => orderController.updateWithdrawalDate(req, res));
+
+/**
+ * @swagger
  * /orders/{id}:
  *   delete:
  *     summary: Remove um pedido
