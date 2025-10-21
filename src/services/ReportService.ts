@@ -551,7 +551,7 @@ export class ReportService {
             .addSelect('COUNT(order.id)', 'orderCount')
             .where('order.stockId = :stockId', { stockId })
             .groupBy('section.id, section.name')
-            .orderBy('orderCount', 'DESC')
+            .orderBy('"orderCount"', 'DESC')
             .getRawMany();
             
         // Calcular percentuais
@@ -590,7 +590,7 @@ export class ReportService {
             .addSelect('COUNT(DISTINCT order.id)', 'orderCount')
             .where('stock.id = :stockId', { stockId })
             .groupBy('merchandiseType.id, merchandiseType.name')
-            .orderBy('totalQuantity', 'DESC')
+            .orderBy('"totalQuantity"', 'DESC')
             .limit(20)
             .getRawMany();
         

@@ -256,6 +256,8 @@ export class ReportController {
     async getCompleteDashboardData(req: Request, res: Response) {
         try {
             const { stockId, startDate, endDate, period } = req.query;
+            console.log(stockId, startDate, endDate, period);
+            
             
             if (!stockId) {
                 return res.status(400).json({ 
