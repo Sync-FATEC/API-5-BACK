@@ -66,4 +66,25 @@ export class StockController {
             next(error);
         }
     }
+
+    async getHistory(req: Request, res: Response, next: NextFunction) {
+        try {
+            const { merchandiseId } = req.params;
+            const { tipo, inicio, fim } = req.query;
+
+            const history = await stockServices.getHistory({
+                merchandiseId,
+                tipo: tipo as string,
+                inicio: inicio as string,
+                fim: fim as string,
+            });
+
+            res.status(200).json({
+                success: true,
+                data: history,
+            });
+        } catch (error) {
+            next(error);
+        }
+    }
 }
