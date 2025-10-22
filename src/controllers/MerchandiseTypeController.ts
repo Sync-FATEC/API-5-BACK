@@ -8,38 +8,28 @@ import { getToken } from "../utils/GetUserToken";
 const merchandiseTypeService = new MerchandiseTypeService();
 
 export class MerchandiseTypeController {
-  async create(req: Request, res: Response, next: NextFunction) {
-    try {
-      const {
-        name,
-        recordNumber,
-        unitOfMeasure,
-        controlled,
-        minimumStock,
-        stockId,
-      } = req.body;
+    async create(req: Request, res: Response, next: NextFunction) {
+        try {
+            const { name, recordNumber, unitOfMeasure, controlled, minimumStock, group, stockId } = req.body;
 
-      if (
-        !name ||
-        !recordNumber ||
-        !unitOfMeasure ||
-        controlled === undefined ||
-        minimumStock === undefined ||
-        !stockId
-      ) {
-        throw new SystemError(
-          "Dados incompletos. Name, recordNumber, unitOfMeasure, controlled, minimumStock e stockId são obrigatórios."
-        );
-      }
+            if (!name || !recordNumber || !unitOfMeasure || controlled === undefined || minimumStock === undefined || !group || !stockId) {
+                throw new SystemError("Dados incompletos. Name, recordNumber, unitOfMeasure, controlled, minimumStock, group e stockId são obrigatórios.");
+            }
 
-      const merchandiseTypeData: MerchandiseTypeType = {
-        name,
-        recordNumber,
-        unitOfMeasure,
-        controlled: Boolean(controlled),
-        minimumStock: Number(minimumStock),
-        stockId,
-      };
+            // Validar se o grupo é válido
+            if (!Object.values(MerchandiseGroup).includes(group)) {
+                throw new SystemError("Grupo inválido. Valores aceitos: " + Object.values(MerchandiseGroup).join(", "));
+            }
+
+            const merchandiseTypeData: MerchandiseTypeType = {
+                name,
+                recordNumber,
+                unitOfMeasure,
+                controlled: Boolean(controlled),
+                minimumStock: Number(minimumStock),
+                group,
+                stockId
+            };
 
       const merchandiseType =
         await merchandiseTypeService.createMerchandiseType(merchandiseTypeData);
@@ -91,7 +81,7 @@ export class MerchandiseTypeController {
   async update(req: Request, res: Response, next: NextFunction) {
     try {
       const { id } = req.params;
-      const { name, recordNumber, unitOfMeasure, controlled, minimumStock } =
+      const { name, recordNumber, unitOfMeasure, controlled, minimumStock, group } =
         req.body;
 
       var payload = getToken(req);
@@ -100,25 +90,23 @@ export class MerchandiseTypeController {
         throw new SystemError("ID do tipo de mercadoria é obrigatório");
       }
 
-      if (
-        !name &&
-        !recordNumber &&
-        !unitOfMeasure &&
-        controlled === undefined &&
-        minimumStock === undefined
-      ) {
-        throw new SystemError("Nenhum dado fornecido para atualização");
-      }
+            if (!name && !recordNumber && !unitOfMeasure && controlled === undefined && minimumStock === undefined && !group) {
+                throw new SystemError("Nenhum dado fornecido para atualização");
+            }
 
-      const merchandiseTypeData: Partial<MerchandiseTypeType> = {};
+            // Validar grupo se fornecido
+            if (group && !Object.values(MerchandiseGroup).includes(group)) {
+                throw new SystemError("Grupo inválido. Valores aceitos: " + Object.values(MerchandiseGroup).join(", "));
+            }
 
-      if (name) merchandiseTypeData.name = name;
-      if (recordNumber) merchandiseTypeData.recordNumber = recordNumber;
-      if (unitOfMeasure) merchandiseTypeData.unitOfMeasure = unitOfMeasure;
-      if (controlled !== undefined)
-        merchandiseTypeData.controlled = Boolean(controlled);
-      if (minimumStock !== undefined)
-        merchandiseTypeData.minimumStock = Number(minimumStock);
+            const merchandiseTypeData: Partial<MerchandiseTypeType> = {};
+            
+            if (name) merchandiseTypeData.name = name;
+            if (recordNumber) merchandiseTypeData.recordNumber = recordNumber;
+            if (unitOfMeasure) merchandiseTypeData.unitOfMeasure = unitOfMeasure;
+            if (controlled !== undefined) merchandiseTypeData.controlled = Boolean(controlled);
+            if (minimumStock !== undefined) merchandiseTypeData.minimumStock = Number(minimumStock);
+            if (group) merchandiseTypeData.group = group;
 
       const userId = payload?.user_id;
       if (!userId) {

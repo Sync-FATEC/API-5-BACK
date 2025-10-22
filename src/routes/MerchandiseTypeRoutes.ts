@@ -79,9 +79,9 @@ router.patch('/:id/quantity-total', AuthMiddleware.requireRole(RoleEnum.ADMIN), 
  *           type: boolean
  *           example: true
  *         group:
- *           type: string
- *           enum: [Medical, Almox]
- *           example: Medical
+           type: string
+           enum: [expediente, limpeza, "Almox Virtual", permanente]
+           example: expediente
  *         minimumStock:
  *           type: number
  *           example: 100
@@ -199,8 +199,8 @@ router.get("/details/:id", merchandiseTypeController.getById);
                  example: true
                group:
                  type: string
-                 enum: [MATERIAL_ESCRITORIO, LIMPEZA, MANUTENCAO, OUTROS]
-                 example: "MATERIAL_ESCRITORIO"
+                 enum: [expediente, limpeza, "Almox Virtual", permanente]
+                 example: "expediente"
                minimumStock:
                  type: number
                  example: 10

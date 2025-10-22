@@ -5,6 +5,7 @@ import { Stock } from './Stock';
 import { LogMerchandiseType } from './LogMerchandiseType';
 import { MerchandiseTypeType } from '../../types/ProductTypeType';
 import { User } from './User';
+import { MerchandiseGroup } from '../enums/MerchandiseGroup';
 
 @Entity()
 export class MerchandiseType {
@@ -28,6 +29,9 @@ export class MerchandiseType {
 
     @Column()
     minimumStock!: number;
+
+    @Column({ type: 'enum', enum: MerchandiseGroup, nullable: true, default: MerchandiseGroup.EXPEDIENTE })
+    group!: MerchandiseGroup | null;
 
     @Column()
     stockId!: string;

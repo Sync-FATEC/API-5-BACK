@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import { SectionService } from '../services/SectionService';
+import { SectionService, ConsumptionAverageDTO } from '../services/SectionService';
 import { SectionDTO } from '../types/OrderSectionDTO';
 
 const sectionService = new SectionService();
@@ -42,5 +42,36 @@ export class SectionController {
     const success = await sectionService.delete(id);
     if (!success) return res.status(404).json({ message: 'Section not found' });
     return res.status(204).send();
+  }
+  
+  async getConsumptionAverage(req: Request, res: Response) {
+    try {
+      const { id } = req.params;
+      const { startDate, endDate } = req.query;
+      
+      // Validate parameters
+      if (!startDate || !endDate) {
+        return res.status(400).json({ message: 'Missing required query parameters: startDate and endDate' });
+      }
+      
+      // Parse dates
+      const parsedStartDate = new Date(startDate as string);
+      const parsedEndDate = new Date(endDate as string);
+      
+      // Validate dates
+      if (isNaN(parsedStartDate.getTime()) || isNaN(parsedEndDate.getTime())) {
+        return res.status(400).json({ message: 'Invalid date format. Use ISO format (YYYY-MM-DD)' });
+      }
+      
+      if (parsedEndDate < parsedStartDate) {
+        return res.status(400).json({ message: 'endDate must be after startDate' });
+      }
+      
+      const consumptionData = await sectionService.getConsumptionAverage(id, parsedStartDate, parsedEndDate);
+      return res.json(consumptionData);
+    } catch (error) {
+      console.error('Error calculating consumption average:', error);
+      return res.status(500).json({ message: 'Failed to calculate consumption average' });
+    }
   }
 }
