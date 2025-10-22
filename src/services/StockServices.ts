@@ -1,5 +1,7 @@
+import { Between } from "typeorm";
 import { StockRepository } from "../repository/StockRepository";
 import { UsersRepository } from "../repository/UsersRepository";
+
 
 const stockRepository = new StockRepository()
 const userRepository = new UsersRepository()
@@ -39,6 +41,30 @@ export class StockServices {
             await stockRepository.deleteStock(stockId);
         } catch (error) {
             console.error("Erro no serviço de exclusão de estoque:", error);
+            throw error;
+        }
+    }
+
+    async getHistory({
+        merchandiseId,
+        tipo,
+        inicio,
+        fim,
+    }: {
+        merchandiseId: string;
+        tipo?: string;
+        inicio?: string;
+        fim?: string;
+        }) {
+            try {
+                return await stockRepository.getHistory({
+                    merchandiseId,
+                    tipo,
+                    inicio,
+                    fim,
+                });
+        } catch (error) {
+            console.error("Erro no serviço de histórico de estoque:", error);
             throw error;
         }
     }

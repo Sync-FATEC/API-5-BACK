@@ -7,6 +7,8 @@ import { RoleEnum } from "../database/enums/RoleEnum";
 const stockController = new StockController();
 const router = Router();
 
+
+
 /**
  * @swagger
  * /stock/{userId}:
@@ -34,6 +36,43 @@ const router = Router();
  *         description: Usuário não encontrado ou sem estoque associado
  */
 router.get("/:userId", stockController.getStockByUser);
+
+/**
+ * @swagger
+ * /stock/historico/{merchandiseId}:
+ *   get:
+ *     summary: Retorna o histórico de movimentações (entradas e saídas) de um item
+ *     tags: [Stock]
+ *     parameters:
+ *       - in: path
+ *         name: merchandiseId
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: ID do item
+ *       - in: query
+ *         name: tipo
+ *         schema:
+ *           type: string
+ *           enum: [entrada, saida]
+ *         description: Filtra por tipo de movimentação
+ *       - in: query
+ *         name: inicio
+ *         schema:
+ *           type: string
+ *           format: date-time
+ *         description: Data inicial
+ *       - in: query
+ *         name: fim
+ *         schema:
+ *           type: string
+ *           format: date-time
+ *         description: Data final
+ *     responses:
+ *       200:
+ *         description: Lista de movimentações
+ */
+router.get("/historico/:merchandiseId", stockController.getHistory);
 
 /**
  * @swagger
