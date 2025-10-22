@@ -69,7 +69,7 @@ export class UserServices {
         throw new SystemError("Email não encontrado");
       }
       
-      if (error.code === 'auth/wrong-password') {
+      if (error.code === 'auth/invalid-credential') {
         throw new SystemError("Senha incorreta");
       }
       

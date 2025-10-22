@@ -6,6 +6,11 @@ import { RoleEnum } from "../database/enums/RoleEnum";
 const merchandiseTypeController = new MerchandiseTypeController();
 const router = Router();
 
+
+router.get("/:id/logs", AuthMiddleware.requireRole(RoleEnum.SOLDADO), merchandiseTypeController.listLogs);
+
+
+
 /**
  * @swagger
  * /merchandise-types/{id}/quantity-total:

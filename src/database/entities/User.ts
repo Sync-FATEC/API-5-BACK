@@ -1,6 +1,7 @@
 import { Column, Entity, PrimaryGeneratedColumn, OneToMany } from "typeorm";
 import { UserStock } from "./UserStock";
 import { RoleEnum } from "../enums/RoleEnum";
+import { LogMerchandiseType } from "./LogMerchandiseType";
 
 @Entity()
 export class User {
@@ -31,4 +32,7 @@ export class User {
 
     @OneToMany(() => UserStock, userStock => userStock.user)
     userStocks!: UserStock[];
+
+    @OneToMany(() => LogMerchandiseType, log => log.user)
+    logs!: LogMerchandiseType[];
 }
