@@ -105,7 +105,6 @@ export class ReportController {
                 stockId: stockId as string,
                 startDate: startDate as string,
                 endDate: endDate as string,
-                period: period as 'daily' | 'weekly' | 'monthly'
             });
 
             return res.json({
@@ -255,9 +254,7 @@ export class ReportController {
      */
     async getCompleteDashboardData(req: Request, res: Response) {
         try {
-            const { stockId, startDate, endDate, period } = req.query;
-            console.log(stockId, startDate, endDate, period);
-            
+            const { stockId, startDate, endDate } = req.query;
             
             if (!stockId) {
                 return res.status(400).json({ 
@@ -269,7 +266,6 @@ export class ReportController {
                 stockId: stockId as string,
                 startDate: startDate as string,
                 endDate: endDate as string,
-                period: period as 'daily' | 'weekly' | 'monthly'
             });
 
             return res.json({

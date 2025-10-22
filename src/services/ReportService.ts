@@ -5,6 +5,7 @@ import { Merchandise } from '../database/entities/Merchandise';
 import { Section } from '../database/entities/Section';
 import { OrderItem } from '../database/entities/OrderItem';
 import { MerchandiseType } from '../database/entities/MerchandiseType';
+import { OrderViewModel } from '../types/OrderSectionDTO';
 import * as ExcelJS from 'exceljs';
 import PDFDocument from 'pdfkit';
 import { MoreThanOrEqual, LessThanOrEqual, Between } from 'typeorm';
@@ -16,7 +17,6 @@ export interface ReportParams {
     includeOrders?: boolean;
     includeMerchandise?: boolean;
     includeStock?: boolean;
-    period?: 'daily' | 'weekly' | 'monthly';
 }
 
 export interface DashboardSummary {
@@ -36,8 +36,7 @@ export interface DashboardSummary {
 }
 
 export interface OrdersByPeriodData {
-    period: string; // Nome do período (data, semana ou mês)
-    count: number;  // Quantidade de pedidos
+    orders: OrderViewModel[]; // Lista completa de pedidos no período
 }
 
 export interface ProductStatusData {
@@ -82,7 +81,7 @@ export interface CompleteDashboardData {
         name: string;
         location: string;
     };
-    ordersByPeriod: OrdersByPeriodData[];
+    ordersByPeriod: OrdersByPeriodData;
     productStatus: ProductStatusData;
     ordersBySection: OrdersBySectionData[];
     topProducts: TopProductsInOrdersData[];
@@ -134,7 +133,7 @@ export class ReportService {
             where: { stock: { id: stockId } },
             relations: ['merchandises']
         });
-        
+
         const totalMerchandise = merchandiseTypes.reduce((total, type) => {
             return total + (type.merchandises?.length || 0);
         }, 0);
@@ -143,7 +142,7 @@ export class ReportService {
         const currentMonth = new Date();
         currentMonth.setDate(1);
         currentMonth.setHours(0, 0, 0, 0);
-        
+
         const ordersThisMonth = await this.orderRepository.count({
             where: {
                 stock: { id: stockId },
@@ -225,19 +224,19 @@ export class ReportService {
 
     async generateExcelReport(params: ReportParams): Promise<Buffer> {
         const summary = await this.getDashboardSummary(params);
-        
+
         const workbook = new ExcelJS.Workbook();
-        
+
         // Aba resumo
         const summarySheet = workbook.addWorksheet('Resumo do Dashboard');
-        
+
         // Cabeçalho
         summarySheet.addRow(['RELATÓRIO DO DASHBOARD']);
         summarySheet.addRow(['Gerado em:', new Date().toLocaleString('pt-BR')]);
         summarySheet.addRow(['Estoque:', summary.stockInfo.name]);
         summarySheet.addRow(['Localização:', summary.stockInfo.location]);
         summarySheet.addRow([]);
-        
+
         // Métricas principais
         summarySheet.addRow(['MÉTRICAS PRINCIPAIS']);
         summarySheet.addRow(['Total de Pedidos:', summary.totalOrders]);
@@ -274,7 +273,7 @@ export class ReportService {
             const ordersSheet = workbook.addWorksheet('Pedidos Recentes');
             ordersSheet.addRow(['PEDIDOS RECENTES']);
             ordersSheet.addRow(['ID', 'Data de Criação', 'Status', 'Seção', 'Qtd Itens']);
-            
+
             summary.recentOrders.forEach(order => {
                 ordersSheet.addRow([
                     order.id,
@@ -288,18 +287,18 @@ export class ReportService {
 
         // Aplicar formatação
         this.formatExcelSheet(summarySheet);
-        
+
         return Buffer.from(await workbook.xlsx.writeBuffer());
     }
 
     async generatePDFReport(params: ReportParams): Promise<Buffer> {
         const summary = await this.getDashboardSummary(params);
-        
+
         return new Promise((resolve, reject) => {
             try {
                 const doc = new PDFDocument();
                 const buffers: Buffer[] = [];
-                
+
                 doc.on('data', buffers.push.bind(buffers));
                 doc.on('end', () => {
                     const pdfBuffer = Buffer.concat(buffers);
@@ -309,7 +308,7 @@ export class ReportService {
                 // Cabeçalho
                 doc.fontSize(20).text('RELATÓRIO DO DASHBOARD', { align: 'center' });
                 doc.moveDown();
-                
+
                 doc.fontSize(12);
                 doc.text(`Gerado em: ${new Date().toLocaleString('pt-BR')}`);
                 doc.text(`Estoque: ${summary.stockInfo.name}`);
@@ -353,7 +352,7 @@ export class ReportService {
                     doc.addPage();
                     doc.fontSize(16).text('PEDIDOS RECENTES');
                     doc.fontSize(10);
-                    
+
                     summary.recentOrders.forEach(order => {
                         doc.text(`ID: ${order.id}`);
                         doc.text(`Data: ${new Date(order.creationDate).toLocaleDateString('pt-BR')}`);
@@ -375,99 +374,51 @@ export class ReportService {
         // Aplicar formatação básica
         sheet.getColumn(1).width = 30;
         sheet.getColumn(2).width = 20;
-        
+
         // Formatar cabeçalhos
         sheet.getRow(1).font = { bold: true, size: 16 };
         sheet.getRow(6).font = { bold: true, size: 14 };
     }
-    
-    // Novos métodos para os dashboards específicos
-    
+
     /**
      * Obtém dados de pedidos por período (diário, semanal ou mensal)
      */
-    async getOrdersByPeriod(params: ReportParams): Promise<OrdersByPeriodData[]> {
-        const { stockId, startDate, endDate, period = 'monthly' } = params;
-        
-        // Definir datas de início e fim
-        let start: Date, end: Date;
-        
+    async getOrdersByPeriod(params: ReportParams): Promise<OrdersByPeriodData> {
+        const { stockId, startDate, endDate } = params;
+
+        const where: any = { stock: { id: stockId }, isActive: true };
         if (startDate && endDate) {
-            start = new Date(startDate);
-            end = new Date(endDate);
-        } else {
-            // Padrão: últimos 6 meses
-            end = new Date();
-            start = new Date();
-            start.setMonth(end.getMonth() - 6);
+            where.creationDate = Between(new Date(startDate), new Date(endDate));
+        } else if (startDate) {
+            where.creationDate = MoreThanOrEqual(new Date(startDate));
+        } else if (endDate) {
+            where.creationDate = LessThanOrEqual(new Date(endDate));
         }
-        
-        // Buscar todos os pedidos no período
+
         const orders = await this.orderRepository.find({
-            where: {
-                stock: { id: stockId },
-                creationDate: Between(start, end)
-            },
-            select: ['creationDate']
+            where,
+            relations: ['orderItems', 'orderItems.merchandiseType', 'section'],
+            order: { creationDate: 'DESC' }
         });
-        
-        // Agrupar por período
-        const results: OrdersByPeriodData[] = [];
-        
-        if (period === 'daily') {
-            // Agrupar por dia
-            const dailyMap = new Map<string, number>();
-            
-            orders.forEach(order => {
-                const date = order.creationDate.toISOString().split('T')[0]; // YYYY-MM-DD
-                dailyMap.set(date, (dailyMap.get(date) || 0) + 1);
-            });
-            
-            // Converter para array
-            dailyMap.forEach((count, date) => {
-                results.push({ period: date, count });
-            });
-        } else if (period === 'weekly') {
-            // Agrupar por semana (usando ano-semana: YYYY-WW)
-            const weeklyMap = new Map<string, number>();
-            
-            orders.forEach(order => {
-                const date = new Date(order.creationDate);
-                const year = date.getFullYear();
-                // Método para calcular o número da semana do ano
-                const weekNumber = this.getWeekNumber(date);
-                const weekKey = `${year}-W${weekNumber.toString().padStart(2, '0')}`;
-                
-                weeklyMap.set(weekKey, (weeklyMap.get(weekKey) || 0) + 1);
-            });
-            
-            // Converter para array
-            weeklyMap.forEach((count, weekKey) => {
-                results.push({ period: weekKey, count });
-            });
-        } else {
-            // Agrupar por mês (formato: YYYY-MM)
-            const monthlyMap = new Map<string, number>();
-            
-            orders.forEach(order => {
-                const date = new Date(order.creationDate);
-                const year = date.getFullYear();
-                const month = (date.getMonth() + 1).toString().padStart(2, '0');
-                const monthKey = `${year}-${month}`;
-                
-                monthlyMap.set(monthKey, (monthlyMap.get(monthKey) || 0) + 1);
-            });
-            
-            // Converter para array
-            monthlyMap.forEach((count, monthKey) => {
-                results.push({ period: monthKey, count });
-            });
-        }
-        
-        // Ordenar por período
-        return results.sort((a, b) => a.period.localeCompare(b.period));
+
+        const orderViewModels: OrderViewModel[] = orders.map(order => ({
+            id: order.id,
+            creationDate: order.creationDate,
+            withdrawalDate: order.withdrawalDate,
+            status: order.status,
+            sectionId: order.section?.id ?? '',
+            sectionName: order.section?.name ?? '',
+            orderItems: order.orderItems.map(item => ({
+                id: item.id,
+                quantity: item.quantity,
+                merchandiseId: item.merchandiseType?.id ?? '',
+                merchandiseName: item.merchandiseType?.name ?? ''
+            }))
+        }));
+
+        return { orders: orderViewModels };
     }
-    
+
     /**
      * Obtém dados sobre o status dos produtos no estoque
      */
@@ -516,13 +467,13 @@ export class ReportService {
             byType
         };
     }
-    
+
     /**
      * Obtém dados de pedidos agrupados por seção
      */
     async getOrdersBySection(params: ReportParams): Promise<OrdersBySectionData[]> {
         const { stockId, startDate, endDate } = params;
-        
+
         let dateFilter: any = {};
         if (startDate && endDate) {
             dateFilter.creationDate = Between(new Date(startDate), new Date(endDate));
@@ -531,17 +482,17 @@ export class ReportService {
         } else if (endDate) {
             dateFilter.creationDate = LessThanOrEqual(new Date(endDate));
         }
-        
+
         // Buscar total de pedidos
         const orderQueryOptions: any = { stock: { id: stockId } };
         if (Object.keys(dateFilter).length > 0) {
             orderQueryOptions.creationDate = dateFilter.creationDate;
         }
-        
+
         const totalOrders = await this.orderRepository.count({
             where: orderQueryOptions
         });
-        
+
         // Buscar pedidos por seção
         const ordersBySectionQuery = await this.orderRepository
             .createQueryBuilder('order')
@@ -553,7 +504,7 @@ export class ReportService {
             .groupBy('section.id, section.name')
             .orderBy('"orderCount"', 'DESC')
             .getRawMany();
-            
+
         // Calcular percentuais
         return ordersBySectionQuery.map(item => ({
             sectionId: item.sectionId,
@@ -562,13 +513,13 @@ export class ReportService {
             percentage: totalOrders > 0 ? (parseInt(item.orderCount) / totalOrders) * 100 : 0
         }));
     }
-    
+
     /**
      * Obtém dados dos produtos mais solicitados nos pedidos
      */
     async getTopProductsInOrders(params: ReportParams): Promise<TopProductsInOrdersData[]> {
         const { stockId, startDate, endDate } = params;
-        
+
         let dateFilter: any = {};
         if (startDate && endDate) {
             dateFilter.creationDate = Between(new Date(startDate), new Date(endDate));
@@ -577,7 +528,7 @@ export class ReportService {
         } else if (endDate) {
             dateFilter.creationDate = LessThanOrEqual(new Date(endDate));
         }
-        
+
         // Buscar top produtos por quantidade
         const topProductsQuery = await this.orderItemRepository
             .createQueryBuilder('orderItem')
@@ -593,7 +544,7 @@ export class ReportService {
             .orderBy('"totalQuantity"', 'DESC')
             .limit(20)
             .getRawMany();
-        
+
         return topProductsQuery.map(item => ({
             merchandiseTypeId: item.merchandiseTypeId,
             name: item.name,
@@ -601,33 +552,33 @@ export class ReportService {
             orderCount: parseInt(item.orderCount)
         }));
     }
-    
+
     /**
      * Obtém dados de alertas de estoque (itens críticos ou abaixo do mínimo)
      */
     async getStockAlerts(params: ReportParams): Promise<StockAlertData[]> {
         const { stockId } = params;
-        
+
         // Buscar tipos de mercadoria e suas quantidades em estoque
         const merchandiseTypes = await this.merchandiseTypeRepository.find({
             where: { stock: { id: stockId } },
             relations: ['merchandises']
         });
-        
+
         const alerts: StockAlertData[] = [];
-        
+
         // Para cada tipo, calcular status do estoque
         for (const type of merchandiseTypes) {
             const totalQuantity = type.merchandises?.reduce((sum, m) => sum + m.quantity, 0) || 0;
-            
+
             let status: 'normal' | 'low' | 'critical' = 'normal';
-            
+
             if (totalQuantity === 0) {
                 status = 'critical';
             } else if (totalQuantity <= type.minimumStock) {
                 status = 'low';
             }
-            
+
             // Incluir apenas itens com alerta (críticos ou baixos)
             if (status !== 'normal') {
                 alerts.push({
@@ -639,7 +590,7 @@ export class ReportService {
                 });
             }
         }
-        
+
         // Ordenar por status (críticos primeiro) e depois por nome
         return alerts.sort((a, b) => {
             if (a.status === 'critical' && b.status !== 'critical') return -1;
@@ -647,13 +598,13 @@ export class ReportService {
             return a.name.localeCompare(b.name);
         });
     }
-    
+
     /**
      * Obtém dados completos para o dashboard geral
      */
     async getCompleteDashboardData(params: ReportParams): Promise<CompleteDashboardData> {
         const { stockId } = params;
-        
+
         // Buscar informações do estoque
         const stock = await this.stockRepository.findOne({
             where: { id: stockId }
@@ -662,7 +613,7 @@ export class ReportService {
         if (!stock) {
             throw new Error('Stock not found');
         }
-        
+
         // Buscar todos os dados necessários em paralelo
         const [
             ordersByPeriod,
@@ -677,7 +628,7 @@ export class ReportService {
             this.getTopProductsInOrders(params),
             this.getStockAlerts(params)
         ]);
-        
+
         return {
             stockInfo: {
                 id: stock.id,
@@ -691,39 +642,47 @@ export class ReportService {
             stockAlerts
         };
     }
-    
+
     /**
      * Gera um relatório completo em Excel com todos os dados dos dashboards
      */
     async generateCompleteDashboardExcelReport(params: ReportParams): Promise<Buffer> {
         const dashboardData = await this.getCompleteDashboardData(params);
-        
+
         const workbook = new ExcelJS.Workbook();
-        
+
         // Adicionar aba de resumo
         const summarySheet = workbook.addWorksheet('Resumo Geral');
-        
+
         // Cabeçalho
         summarySheet.addRow(['RELATÓRIO COMPLETO DO DASHBOARD']);
         summarySheet.addRow(['Gerado em:', new Date().toLocaleString('pt-BR')]);
         summarySheet.addRow(['Estoque:', dashboardData.stockInfo.name]);
         summarySheet.addRow(['Localização:', dashboardData.stockInfo.location]);
         summarySheet.addRow([]);
-        
+
         // Adicionar aba de pedidos por período
         const ordersPeriodSheet = workbook.addWorksheet('Pedidos por Período');
         ordersPeriodSheet.addRow(['PEDIDOS POR PERÍODO']);
-        ordersPeriodSheet.addRow(['Período', 'Quantidade de Pedidos']);
-        
-        dashboardData.ordersByPeriod.forEach(item => {
-            ordersPeriodSheet.addRow([item.period, item.count]);
+        ordersPeriodSheet.addRow(['ID', 'Data de Criação', 'Data de Retirada', 'Status', 'Seção', 'Itens']);
+
+        dashboardData.ordersByPeriod.orders.forEach((order: OrderViewModel) => {
+            const itemsText = order.orderItems.map(item => `${item.merchandiseName} (${item.quantity})`).join(', ');
+            ordersPeriodSheet.addRow([
+                order.id,
+                order.creationDate,
+                order.withdrawalDate || 'N/A',
+                order.status,
+                order.sectionName,
+                itemsText
+            ]);
         });
-        
+
         // Adicionar aba de status de produtos
         const productStatusSheet = workbook.addWorksheet('Status de Produtos');
         productStatusSheet.addRow(['STATUS DE PRODUTOS']);
         productStatusSheet.addRow(['Tipo', 'Total', 'Em Estoque', 'Estoque Baixo', 'Crítico']);
-        
+
         dashboardData.productStatus.byType.forEach(item => {
             productStatusSheet.addRow([
                 item.typeName,
@@ -733,20 +692,20 @@ export class ReportService {
                 item.critical
             ]);
         });
-        
+
         productStatusSheet.addRow([]);
-        productStatusSheet.addRow(['TOTAL GERAL', 
+        productStatusSheet.addRow(['TOTAL GERAL',
             dashboardData.productStatus.total,
             dashboardData.productStatus.inStock,
             dashboardData.productStatus.lowStock,
             dashboardData.productStatus.critical
         ]);
-        
+
         // Adicionar aba de pedidos por seção
         const ordersSectionSheet = workbook.addWorksheet('Pedidos por Seção');
         ordersSectionSheet.addRow(['PEDIDOS POR SEÇÃO']);
         ordersSectionSheet.addRow(['Seção', 'Quantidade de Pedidos', 'Percentual (%)']);
-        
+
         dashboardData.ordersBySection.forEach(item => {
             ordersSectionSheet.addRow([
                 item.sectionName,
@@ -754,12 +713,12 @@ export class ReportService {
                 item.percentage.toFixed(2)
             ]);
         });
-        
+
         // Adicionar aba de produtos mais solicitados
         const topProductsSheet = workbook.addWorksheet('Produtos Mais Solicitados');
         topProductsSheet.addRow(['PRODUTOS MAIS SOLICITADOS EM PEDIDOS']);
         topProductsSheet.addRow(['Nome', 'Quantidade Total', 'Aparece em Pedidos']);
-        
+
         dashboardData.topProducts.forEach(item => {
             topProductsSheet.addRow([
                 item.name,
@@ -767,12 +726,12 @@ export class ReportService {
                 item.orderCount
             ]);
         });
-        
+
         // Adicionar aba de alertas de estoque
         const alertsSheet = workbook.addWorksheet('Alertas de Estoque');
         alertsSheet.addRow(['ALERTAS DE ESTOQUE']);
         alertsSheet.addRow(['Produto', 'Quantidade em Estoque', 'Estoque Mínimo', 'Status']);
-        
+
         dashboardData.stockAlerts.forEach(item => {
             alertsSheet.addRow([
                 item.name,
@@ -781,7 +740,7 @@ export class ReportService {
                 item.status === 'critical' ? 'CRÍTICO' : 'BAIXO'
             ]);
         });
-        
+
         // Aplicar formatação básica
         this.formatExcelSheet(summarySheet);
         this.formatExcelSheet(ordersPeriodSheet);
@@ -789,46 +748,51 @@ export class ReportService {
         this.formatExcelSheet(ordersSectionSheet);
         this.formatExcelSheet(topProductsSheet);
         this.formatExcelSheet(alertsSheet);
-        
+
         return Buffer.from(await workbook.xlsx.writeBuffer());
     }
-    
+
     /**
      * Gera um relatório completo em PDF com todos os dados dos dashboards
      */
     async generateCompleteDashboardPDFReport(params: ReportParams): Promise<Buffer> {
         const dashboardData = await this.getCompleteDashboardData(params);
-        
+
         return new Promise((resolve, reject) => {
             try {
                 const doc = new PDFDocument();
                 const buffers: Buffer[] = [];
-                
+
                 doc.on('data', buffers.push.bind(buffers));
                 doc.on('end', () => {
                     const pdfBuffer = Buffer.concat(buffers);
                     resolve(pdfBuffer);
                 });
-                
+
                 // Cabeçalho
                 doc.fontSize(20).text('RELATÓRIO COMPLETO DO DASHBOARD', { align: 'center' });
                 doc.moveDown();
-                
+
                 doc.fontSize(12);
                 doc.text(`Gerado em: ${new Date().toLocaleString('pt-BR')}`);
                 doc.text(`Estoque: ${dashboardData.stockInfo.name}`);
                 doc.text(`Localização: ${dashboardData.stockInfo.location}`);
                 doc.moveDown();
-                
+
                 // Pedidos por período
                 doc.fontSize(16).text('PEDIDOS POR PERÍODO');
                 doc.fontSize(12);
-                dashboardData.ordersByPeriod.forEach(item => {
-                    doc.text(`${item.period}: ${item.count} pedidos`);
-                });
+                if (dashboardData.ordersByPeriod.orders.length > 0) {
+                    dashboardData.ordersByPeriod.orders.forEach((order: OrderViewModel) => {
+                        const itemsText = order.orderItems.map(item => `${item.merchandiseName} (${item.quantity})`).join(', ');
+                        doc.text(`Pedido ${order.id} - ${order.creationDate} - ${order.status} - ${order.sectionName}`);
+                        doc.text(`  Itens: ${itemsText}`);
+                        doc.moveDown(0.5);
+                    });
+                } else {
+                    doc.text('Nenhum pedido encontrado no período especificado.');
+                }
                 doc.moveDown();
-                
-                // Status de produtos
                 doc.fontSize(16).text('STATUS DE PRODUTOS');
                 doc.fontSize(12);
                 doc.text(`Total: ${dashboardData.productStatus.total}`);
@@ -836,7 +800,7 @@ export class ReportService {
                 doc.text(`Estoque Baixo: ${dashboardData.productStatus.lowStock}`);
                 doc.text(`Crítico: ${dashboardData.productStatus.critical}`);
                 doc.moveDown();
-                
+
                 // Pedidos por seção
                 doc.addPage();
                 doc.fontSize(16).text('PEDIDOS POR SEÇÃO');
@@ -845,7 +809,7 @@ export class ReportService {
                     doc.text(`${item.sectionName}: ${item.orderCount} pedidos (${item.percentage.toFixed(2)}%)`);
                 });
                 doc.moveDown();
-                
+
                 // Produtos mais solicitados
                 doc.fontSize(16).text('PRODUTOS MAIS SOLICITADOS');
                 doc.fontSize(12);
@@ -853,7 +817,7 @@ export class ReportService {
                     doc.text(`${index + 1}. ${item.name}: ${item.totalQuantity} unidades (${item.orderCount} pedidos)`);
                 });
                 doc.moveDown();
-                
+
                 // Alertas de estoque
                 doc.addPage();
                 doc.fontSize(16).text('ALERTAS DE ESTOQUE');
@@ -862,14 +826,14 @@ export class ReportService {
                     const status = item.status === 'critical' ? 'CRÍTICO' : 'BAIXO';
                     doc.text(`${item.name}: ${item.inStock}/${item.minimumStock} - ${status}`);
                 });
-                
+
                 doc.end();
             } catch (error) {
                 reject(error);
             }
         });
     }
-    
+
     // Método auxiliar para obter o número da semana do ano
     private getWeekNumber(d: Date): number {
         d = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));

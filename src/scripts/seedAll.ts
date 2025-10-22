@@ -128,11 +128,6 @@ async function seedStocks() {
 
   const stocks = [
     {
-      name: "Estoque Principal",
-      location: "Depósito Central - Setor A",
-      active: true
-    },
-    {
       name: "Farmácia",
       location: "Enfermaria - Ala Norte",
       active: true
@@ -178,17 +173,17 @@ async function seedUserStocks(users: User[], stocks: Stock[]) {
   const userStockData = [
     {
       user: users.find(u => u.role === RoleEnum.ADMIN),
-      stock: stocks[0],
+      stock: stocks[0], // Farmácia
       responsibility: StockResponsibility.ADMIN
     },
     {
       user: users.find(u => u.role === RoleEnum.SUPERVISOR),
-      stock: stocks[1],
+      stock: stocks[0], // Farmácia
       responsibility: StockResponsibility.MANAGER
     },
     {
       user: users.find(u => u.role === RoleEnum.SOLDADO),
-      stock: stocks[2],
+      stock: stocks[1], // Almoxarifado
       responsibility: StockResponsibility.USER
     }
   ];
@@ -232,15 +227,21 @@ async function seedBatches() {
   const batchRepository = AppDataSource.getRepository(Batch);
 
   const batches = [
-    {
-      expirationDate: new Date('2025-12-31')
-    },
-    {
-      expirationDate: new Date('2026-06-30')
-    },
-    {
-      expirationDate: new Date('2024-12-31')
-    }
+    { expirationDate: new Date('2025-12-31') },
+    { expirationDate: new Date('2026-06-30') },
+    { expirationDate: new Date('2025-08-15') },
+    { expirationDate: new Date('2026-12-31') },
+    { expirationDate: new Date('2025-09-30') },
+    { expirationDate: new Date('2027-03-15') },
+    { expirationDate: new Date('2025-11-20') },
+    { expirationDate: new Date('2026-04-10') },
+    { expirationDate: new Date('2025-07-25') },
+    { expirationDate: new Date('2026-10-05') },
+    { expirationDate: new Date('2027-01-30') },
+    { expirationDate: new Date('2025-10-12') },
+    { expirationDate: new Date('2026-08-18') },
+    { expirationDate: new Date('2025-06-22') },
+    { expirationDate: new Date('2027-05-14') }
   ];
 
   const createdBatches: Batch[] = [];
@@ -272,35 +273,358 @@ async function seedMerchandiseTypes(stocks: Stock[]) {
     minimumStock: number;
     stockId: string;
   }> = [
+    // FARMÁCIA - Medicamentos e Equipamentos Médicos
     {
-      name: "Medicamento Analgésico",
+      name: "Paracetamol 500mg",
       recordNumber: "MED001",
+      unitOfMeasure: "Comprimido",
+      quantityTotal: 1000,
+      controlled: false,
+      group: MerchandiseGroup.ALMOX_VIRTUAL,
+      minimumStock: 200,
+      stockId: stocks[0].id // Farmácia
+    },
+    {
+      name: "Ibuprofeno 600mg",
+      recordNumber: "MED002",
+      unitOfMeasure: "Comprimido",
+      quantityTotal: 800,
+      controlled: false,
+      group: MerchandiseGroup.ALMOX_VIRTUAL,
+      minimumStock: 150,
+      stockId: stocks[0].id // Farmácia
+    },
+    {
+      name: "Dipirona 500mg",
+      recordNumber: "MED003",
+      unitOfMeasure: "Comprimido",
+      quantityTotal: 600,
+      controlled: false,
+      group: MerchandiseGroup.ALMOX_VIRTUAL,
+      minimumStock: 100,
+      stockId: stocks[0].id // Farmácia
+    },
+    {
+      name: "Amoxicilina 500mg",
+      recordNumber: "MED004",
+      unitOfMeasure: "Cápsula",
+      quantityTotal: 400,
+      controlled: true,
+      group: MerchandiseGroup.ALMOX_VIRTUAL,
+      minimumStock: 80,
+      stockId: stocks[0].id // Farmácia
+    },
+    {
+      name: "Omeprazol 20mg",
+      recordNumber: "MED005",
+      unitOfMeasure: "Cápsula",
+      quantityTotal: 300,
+      controlled: false,
+      group: MerchandiseGroup.ALMOX_VIRTUAL,
+      minimumStock: 60,
+      stockId: stocks[0].id // Farmácia
+    },
+    {
+      name: "Losartana 50mg",
+      recordNumber: "MED006",
       unitOfMeasure: "Comprimido",
       quantityTotal: 500,
       controlled: true,
       group: MerchandiseGroup.ALMOX_VIRTUAL,
       minimumStock: 100,
-      stockId: stocks[1].id // Farmácia
+      stockId: stocks[0].id // Farmácia
     },
     {
-      name: "Material de Escritório",
+      name: "Metformina 850mg",
+      recordNumber: "MED007",
+      unitOfMeasure: "Comprimido",
+      quantityTotal: 450,
+      controlled: true,
+      group: MerchandiseGroup.ALMOX_VIRTUAL,
+      minimumStock: 90,
+      stockId: stocks[0].id // Farmácia
+    },
+    {
+      name: "Soro Fisiológico 500ml",
+      recordNumber: "MED008",
+      unitOfMeasure: "Frasco",
+      quantityTotal: 200,
+      controlled: false,
+      group: MerchandiseGroup.ALMOX_VIRTUAL,
+      minimumStock: 40,
+      stockId: stocks[0].id // Farmácia
+    },
+    {
+      name: "Seringa Descartável 10ml",
+      recordNumber: "MED009",
+      unitOfMeasure: "Unidade",
+      quantityTotal: 1500,
+      controlled: false,
+      group: MerchandiseGroup.ALMOX_VIRTUAL,
+      minimumStock: 300,
+      stockId: stocks[0].id // Farmácia
+    },
+    {
+      name: "Luvas Cirúrgicas",
+      recordNumber: "MED010",
+      unitOfMeasure: "Par",
+      quantityTotal: 2000,
+      controlled: false,
+      group: MerchandiseGroup.ALMOX_VIRTUAL,
+      minimumStock: 400,
+      stockId: stocks[0].id // Farmácia
+    },
+    {
+      name: "Termômetro Digital",
+      recordNumber: "MED011",
+      unitOfMeasure: "Unidade",
+      quantityTotal: 50,
+      controlled: false,
+      group: MerchandiseGroup.PERMANENTE,
+      minimumStock: 10,
+      stockId: stocks[0].id // Farmácia
+    },
+    {
+      name: "Estetoscópio",
+      recordNumber: "MED012",
+      unitOfMeasure: "Unidade",
+      quantityTotal: 25,
+      controlled: false,
+      group: MerchandiseGroup.PERMANENTE,
+      minimumStock: 5,
+      stockId: stocks[0].id // Farmácia
+    },
+    {
+      name: "Gaze Estéril",
+      recordNumber: "MED013",
+      unitOfMeasure: "Pacote",
+      quantityTotal: 300,
+      controlled: false,
+      group: MerchandiseGroup.ALMOX_VIRTUAL,
+      minimumStock: 60,
+      stockId: stocks[0].id // Farmácia
+    },
+    {
+      name: "Álcool 70%",
+      recordNumber: "MED014",
+      unitOfMeasure: "Litro",
+      quantityTotal: 100,
+      controlled: false,
+      group: MerchandiseGroup.ALMOX_VIRTUAL,
+      minimumStock: 20,
+      stockId: stocks[0].id // Farmácia
+    },
+    {
+      name: "Morfina 10mg",
+      recordNumber: "MED015",
+      unitOfMeasure: "Ampola",
+      quantityTotal: 50,
+      controlled: true,
+      group: MerchandiseGroup.ALMOX_VIRTUAL,
+      minimumStock: 10,
+      stockId: stocks[0].id // Farmácia
+    },
+
+    // ALMOXARIFADO - Material de Escritório e Equipamentos
+    {
+      name: "Papel A4 75g",
       recordNumber: "ALM001",
+      unitOfMeasure: "Resma",
+      quantityTotal: 500,
+      controlled: false,
+      group: MerchandiseGroup.EXPEDIENTE,
+      minimumStock: 100,
+      stockId: stocks[1].id // Almoxarifado
+    },
+    {
+      name: "Caneta Esferográfica Azul",
+      recordNumber: "ALM002",
+      unitOfMeasure: "Unidade",
+      quantityTotal: 1000,
+      controlled: false,
+      group: MerchandiseGroup.EXPEDIENTE,
+      minimumStock: 200,
+      stockId: stocks[1].id // Almoxarifado
+    },
+    {
+      name: "Caneta Esferográfica Preta",
+      recordNumber: "ALM003",
+      unitOfMeasure: "Unidade",
+      quantityTotal: 800,
+      controlled: false,
+      group: MerchandiseGroup.EXPEDIENTE,
+      minimumStock: 160,
+      stockId: stocks[1].id // Almoxarifado
+    },
+    {
+      name: "Lápis HB",
+      recordNumber: "ALM004",
+      unitOfMeasure: "Unidade",
+      quantityTotal: 600,
+      controlled: false,
+      group: MerchandiseGroup.EXPEDIENTE,
+      minimumStock: 120,
+      stockId: stocks[1].id // Almoxarifado
+    },
+    {
+      name: "Borracha Escolar",
+      recordNumber: "ALM005",
+      unitOfMeasure: "Unidade",
+      quantityTotal: 300,
+      controlled: false,
+      group: MerchandiseGroup.EXPEDIENTE,
+      minimumStock: 60,
+      stockId: stocks[1].id // Almoxarifado
+    },
+    {
+      name: "Grampeador",
+      recordNumber: "ALM006",
+      unitOfMeasure: "Unidade",
+      quantityTotal: 50,
+      controlled: false,
+      group: MerchandiseGroup.PERMANENTE,
+      minimumStock: 10,
+      stockId: stocks[1].id // Almoxarifado
+    },
+    {
+      name: "Grampos para Grampeador",
+      recordNumber: "ALM007",
+      unitOfMeasure: "Caixa",
+      quantityTotal: 200,
+      controlled: false,
+      group: MerchandiseGroup.EXPEDIENTE,
+      minimumStock: 40,
+      stockId: stocks[1].id // Almoxarifado
+    },
+    {
+      name: "Pasta Suspensa",
+      recordNumber: "ALM008",
+      unitOfMeasure: "Unidade",
+      quantityTotal: 400,
+      controlled: false,
+      group: MerchandiseGroup.EXPEDIENTE,
+      minimumStock: 80,
+      stockId: stocks[1].id // Almoxarifado
+    },
+    {
+      name: "Arquivo Morto",
+      recordNumber: "ALM009",
+      unitOfMeasure: "Unidade",
+      quantityTotal: 150,
+      controlled: false,
+      group: MerchandiseGroup.EXPEDIENTE,
+      minimumStock: 30,
+      stockId: stocks[1].id // Almoxarifado
+    },
+    {
+      name: "Toner para Impressora HP",
+      recordNumber: "ALM010",
+      unitOfMeasure: "Unidade",
+      quantityTotal: 30,
+      controlled: false,
+      group: MerchandiseGroup.EXPEDIENTE,
+      minimumStock: 6,
+      stockId: stocks[1].id // Almoxarifado
+    },
+    {
+      name: "Computador Desktop",
+      recordNumber: "ALM011",
+      unitOfMeasure: "Unidade",
+      quantityTotal: 20,
+      controlled: true,
+      group: MerchandiseGroup.PERMANENTE,
+      minimumStock: 3,
+      stockId: stocks[1].id // Almoxarifado
+    },
+    {
+      name: "Monitor LED 24\"",
+      recordNumber: "ALM012",
+      unitOfMeasure: "Unidade",
+      quantityTotal: 25,
+      controlled: true,
+      group: MerchandiseGroup.PERMANENTE,
+      minimumStock: 5,
+      stockId: stocks[1].id // Almoxarifado
+    },
+    {
+      name: "Teclado USB",
+      recordNumber: "ALM013",
+      unitOfMeasure: "Unidade",
+      quantityTotal: 40,
+      controlled: false,
+      group: MerchandiseGroup.PERMANENTE,
+      minimumStock: 8,
+      stockId: stocks[1].id // Almoxarifado
+    },
+    {
+      name: "Mouse Óptico",
+      recordNumber: "ALM014",
+      unitOfMeasure: "Unidade",
+      quantityTotal: 50,
+      controlled: false,
+      group: MerchandiseGroup.PERMANENTE,
+      minimumStock: 10,
+      stockId: stocks[1].id // Almoxarifado
+    },
+    {
+      name: "Cadeira de Escritório",
+      recordNumber: "ALM015",
+      unitOfMeasure: "Unidade",
+      quantityTotal: 30,
+      controlled: false,
+      group: MerchandiseGroup.PERMANENTE,
+      minimumStock: 6,
+      stockId: stocks[1].id // Almoxarifado
+    },
+    {
+      name: "Mesa de Escritório",
+      recordNumber: "ALM016",
+      unitOfMeasure: "Unidade",
+      quantityTotal: 25,
+      controlled: false,
+      group: MerchandiseGroup.PERMANENTE,
+      minimumStock: 5,
+      stockId: stocks[1].id // Almoxarifado
+    },
+    {
+      name: "Impressora Multifuncional",
+      recordNumber: "ALM017",
+      unitOfMeasure: "Unidade",
+      quantityTotal: 15,
+      controlled: true,
+      group: MerchandiseGroup.PERMANENTE,
+      minimumStock: 3,
+      stockId: stocks[1].id // Almoxarifado
+    },
+    {
+      name: "Cabo de Rede Cat6",
+      recordNumber: "ALM018",
+      unitOfMeasure: "Metro",
+      quantityTotal: 1000,
+      controlled: false,
+      group: MerchandiseGroup.EXPEDIENTE,
+      minimumStock: 200,
+      stockId: stocks[1].id // Almoxarifado
+    },
+    {
+      name: "Fita Adesiva Transparente",
+      recordNumber: "ALM019",
+      unitOfMeasure: "Rolo",
+      quantityTotal: 100,
+      controlled: false,
+      group: MerchandiseGroup.EXPEDIENTE,
+      minimumStock: 20,
+      stockId: stocks[1].id // Almoxarifado
+    },
+    {
+      name: "Marcador de Texto Amarelo",
+      recordNumber: "ALM020",
       unitOfMeasure: "Unidade",
       quantityTotal: 200,
       controlled: false,
       group: MerchandiseGroup.EXPEDIENTE,
-      minimumStock: 50,
-      stockId: stocks[2].id // Almoxarifado
-    },
-    {
-      name: "Equipamento Médico",
-      recordNumber: "MED002",
-      unitOfMeasure: "Peça",
-      quantityTotal: 25,
-      controlled: true,
-      group: MerchandiseGroup.PERMANENTE,
-      minimumStock: 10,
-      stockId: stocks[1].id // Farmácia
+      minimumStock: 40,
+      stockId: stocks[1].id // Almoxarifado
     }
   ];
 
@@ -387,11 +711,24 @@ async function seedSections() {
   console.log("=== Criando Seções ===");
   const sectionRepository = AppDataSource.getRepository(Section);
   const sections = [
-    { name: "Empresa Saúde Total" },
-    { name: "Empresa Vida Plena" },
-    { name: "Empresa Bem Estar" },
-    { name: "Empresa MedPrime" },
-    { name: "Empresa Nova Saúde" },
+    { name: "Emergência" },
+    { name: "Cardiologia" },
+    { name: "Endocrinologia" },
+    { name: "Pediatria" },
+    { name: "Cirurgia" },
+    { name: "UTI" },
+    { name: "Oncologia" },
+    { name: "Neurologia" },
+    { name: "Recursos Humanos" },
+    { name: "Financeiro" },
+    { name: "Tecnologia da Informação" },
+    { name: "Administração Geral" },
+    { name: "Compras" },
+    { name: "Jurídico" },
+    { name: "Marketing" },
+    { name: "Manutenção" },
+    { name: "Segurança" },
+    { name: "Limpeza" },
   ];
   const createdSections: Section[] = [];
   for (const sectionData of sections) {
@@ -412,43 +749,139 @@ async function seedSections() {
 async function seedOrders(sections: Section[], stocks: Stock[]) {
   console.log("=== Criando Pedidos ===");
   const orderRepository = AppDataSource.getRepository(Order);
-  const orders = [
+  
+  // Função auxiliar para gerar datas aleatórias
+  const getRandomDate = (start: Date, end: Date) => {
+    return new Date(start.getTime() + Math.random() * (end.getTime() - start.getTime()));
+  };
+
+  // Função auxiliar para gerar status aleatório
+  const getRandomStatus = () => {
+    const statuses = ["COMPLETED", "PENDING", "CANCELLED"];
+    const weights = [0.6, 0.3, 0.1]; // 60% completed, 30% pending, 10% cancelled
+    const random = Math.random();
+    if (random < weights[0]) return statuses[0];
+    if (random < weights[0] + weights[1]) return statuses[1];
+    return statuses[2];
+  };
+
+  const orders = [];
+  
+  // Gerar muitos pedidos com datas variadas (últimos 2 anos)
+  const startDate = new Date('2023-01-01');
+  const endDate = new Date('2025-01-31');
+  
+  // Criar 150 pedidos variados
+  for (let i = 0; i < 150; i++) {
+    const creationDate = getRandomDate(startDate, endDate);
+    const status = getRandomStatus();
+    const section = sections[Math.floor(Math.random() * sections.length)];
+    
+    // Determinar o stock baseado na seção
+    let stock;
+    if (section.name.includes('Emergência') || section.name.includes('Cardiologia') || 
+        section.name.includes('Endocrinologia') || section.name.includes('Pediatria') ||
+        section.name.includes('Cirurgia') || section.name.includes('UTI') ||
+        section.name.includes('Oncologia') || section.name.includes('Neurologia')) {
+      stock = stocks[0]; // Farmácia
+    } else {
+      stock = stocks[1]; // Almoxarifado
+    }
+
+    let withdrawalDate = null;
+    if (status === "COMPLETED") {
+      // Para pedidos completos, adicionar 1-10 dias à data de criação
+      withdrawalDate = new Date(creationDate.getTime() + (Math.random() * 10 + 1) * 24 * 60 * 60 * 1000);
+    }
+
+    orders.push({
+      creationDate,
+      withdrawalDate,
+      status,
+      section,
+      stock
+    });
+  }
+
+  // Adicionar alguns pedidos específicos para garantir variedade
+  const specificOrders = [
+    // Pedidos da Farmácia
     {
-      creationDate: new Date('2024-01-15'),
-      withdrawalDate: new Date('2024-01-20'),
+      creationDate: new Date('2024-12-01'),
+      withdrawalDate: new Date('2024-12-03'),
       status: "COMPLETED",
-      section: sections[0],
-      stock: stocks[0] // Estoque Principal
+      section: sections.find(s => s.name === 'Emergência') || sections[0],
+      stock: stocks[0] // Farmácia
     },
     {
-      creationDate: new Date('2024-01-25'),
-      withdrawalDate: null,
-      status: "PENDING",
-      section: sections[1],
-      stock: stocks[1] // Farmácia
-    },
-    {
-      creationDate: new Date('2024-01-30'),
-      withdrawalDate: null,
-      status: "PENDING",
-      section: sections[2],
-      stock: stocks[1] // Farmácia
-    },
-    {
-      creationDate: new Date('2024-02-05'),
-      withdrawalDate: null,
-      status: "PENDING",
-      section: sections[3],
-      stock: stocks[2] // Almoxarifado
-    },
-    {
-      creationDate: new Date('2024-02-10'),
-      withdrawalDate: null,
+      creationDate: new Date('2024-12-15'),
+      withdrawalDate: new Date('2024-12-18'),
       status: "COMPLETED",
-      section: sections[4],
-      stock: stocks[0] // Estoque Principal
+      section: sections.find(s => s.name === 'Cardiologia') || sections[1],
+      stock: stocks[0] // Farmácia
+    },
+    {
+      creationDate: new Date('2025-01-05'),
+      withdrawalDate: null,
+      status: "PENDING",
+      section: sections.find(s => s.name === 'UTI') || sections[5],
+      stock: stocks[0] // Farmácia
+    },
+    {
+      creationDate: new Date('2025-01-10'),
+      withdrawalDate: null,
+      status: "PENDING",
+      section: sections.find(s => s.name === 'Oncologia') || sections[6],
+      stock: stocks[0] // Farmácia
+    },
+    {
+      creationDate: new Date('2025-01-20'),
+      withdrawalDate: null,
+      status: "PENDING",
+      section: sections.find(s => s.name === 'Pediatria') || sections[3],
+      stock: stocks[0] // Farmácia
+    },
+
+    // Pedidos do Almoxarifado
+    {
+      creationDate: new Date('2024-11-20'),
+      withdrawalDate: new Date('2024-11-25'),
+      status: "COMPLETED",
+      section: sections.find(s => s.name === 'Tecnologia da Informação') || sections[10],
+      stock: stocks[1] // Almoxarifado
+    },
+    {
+      creationDate: new Date('2024-12-10'),
+      withdrawalDate: new Date('2024-12-12'),
+      status: "COMPLETED",
+      section: sections.find(s => s.name === 'Recursos Humanos') || sections[8],
+      stock: stocks[1] // Almoxarifado
+    },
+    {
+      creationDate: new Date('2025-01-08'),
+      withdrawalDate: null,
+      status: "PENDING",
+      section: sections.find(s => s.name === 'Financeiro') || sections[9],
+      stock: stocks[1] // Almoxarifado
+    },
+    {
+      creationDate: new Date('2025-01-15'),
+      withdrawalDate: null,
+      status: "PENDING",
+      section: sections.find(s => s.name === 'Marketing') || sections[14],
+      stock: stocks[1] // Almoxarifado
+    },
+    {
+      creationDate: new Date('2025-01-25'),
+      withdrawalDate: null,
+      status: "PENDING",
+      section: sections.find(s => s.name === 'Compras') || sections[12],
+      stock: stocks[1] // Almoxarifado
     }
   ];
+
+  // Adicionar pedidos específicos à lista
+  orders.push(...specificOrders);
   const createdOrders: Order[] = [];
   for (const orderData of orders) {
     const order = new Order();
@@ -468,33 +901,120 @@ async function seedOrderItems(orders: Order[], merchandises: Merchandise[]) {
   console.log("=== Criando Itens de Pedido ===");
   const orderItemRepository = AppDataSource.getRepository(OrderItem);
 
-  const orderItems = [
+  // Função auxiliar para gerar quantidade aleatória baseada no tipo de mercadoria
+  const getRandomQuantity = (merchandiseType: MerchandiseType) => {
+    // Medicamentos: 10-200 unidades
+    if (merchandiseType.group === MerchandiseGroup.ALMOX_VIRTUAL) {
+      return Math.floor(Math.random() * 191) + 10; // 10-200
+    }
+    // Equipamentos permanentes: 1-10 unidades
+    if (merchandiseType.group === MerchandiseGroup.PERMANENTE) {
+      return Math.floor(Math.random() * 10) + 1; // 1-10
+    }
+    // Material de expediente: 5-100 unidades
+    return Math.floor(Math.random() * 96) + 5; // 5-100
+  };
+
+  // Separar mercadorias por estoque para facilitar a atribuição
+  const farmaciaTypes = merchandises
+    .filter(m => m.type.stockId === orders[0]?.stock?.id || m.type.name.includes('Paracetamol') || m.type.name.includes('Ibuprofeno'))
+    .map(m => m.type);
+  
+  const almoxarifadoTypes = merchandises
+    .filter(m => m.type.stockId !== orders[0]?.stock?.id && !m.type.name.includes('Paracetamol') && !m.type.name.includes('Ibuprofeno'))
+    .map(m => m.type);
+
+  const orderItems = [];
+
+  // Criar itens para cada pedido
+  for (const order of orders) {
+    // Determinar quantos itens este pedido terá (1-8 itens por pedido)
+    const numItems = Math.floor(Math.random() * 8) + 1;
+    
+    // Determinar quais tipos de mercadoria usar baseado no estoque do pedido
+    let availableTypes;
+    if (order.stock.name === 'Farmácia') {
+      availableTypes = farmaciaTypes.length > 0 ? farmaciaTypes : merchandises.slice(0, 15).map(m => m.type);
+    } else {
+      availableTypes = almoxarifadoTypes.length > 0 ? almoxarifadoTypes : merchandises.slice(15).map(m => m.type);
+    }
+
+    // Se não há tipos disponíveis, usar todos
+    if (availableTypes.length === 0) {
+      availableTypes = merchandises.map(m => m.type);
+    }
+
+    // Criar itens únicos para este pedido (sem repetir tipos)
+    const usedTypes = new Set();
+    for (let i = 0; i < numItems && usedTypes.size < availableTypes.length; i++) {
+      let merchandiseType;
+      do {
+        merchandiseType = availableTypes[Math.floor(Math.random() * availableTypes.length)];
+      } while (usedTypes.has(merchandiseType.id));
+      
+      usedTypes.add(merchandiseType.id);
+      
+      orderItems.push({
+        order,
+        merchandiseType,
+        quantity: getRandomQuantity(merchandiseType)
+      });
+    }
+  }
+
+  // Adicionar alguns itens específicos para garantir variedade
+  const specificItems = [
+    // Itens da Farmácia
     {
-      order: orders[0],
-  merchandiseType: merchandises[0].type,
+      order: orders.find(o => o.stock.name === 'Farmácia') || orders[0],
+      merchandiseType: merchandises.find(m => m.type.name.includes('Paracetamol'))?.type || merchandises[0].type,
+      quantity: 100
+    },
+    {
+      order: orders.find(o => o.stock.name === 'Farmácia') || orders[0],
+      merchandiseType: merchandises.find(m => m.type.name.includes('Ibuprofeno'))?.type || merchandises[1]?.type,
+      quantity: 75
+    },
+    {
+      order: orders.find(o => o.stock.name === 'Farmácia') || orders[0],
+      merchandiseType: merchandises.find(m => m.type.name.includes('Seringa'))?.type || merchandises[2]?.type,
+      quantity: 200
+    },
+    {
+      order: orders.find(o => o.stock.name === 'Farmácia') || orders[0],
+      merchandiseType: merchandises.find(m => m.type.name.includes('Luvas'))?.type || merchandises[3]?.type,
+      quantity: 500
+    },
+
+    // Itens do Almoxarifado
+    {
+      order: orders.find(o => o.stock.name === 'Almoxarifado') || orders[1],
+      merchandiseType: merchandises.find(m => m.type.name.includes('Papel A4'))?.type || merchandises[15]?.type,
       quantity: 50
     },
     {
-      order: orders[1],
-  merchandiseType: merchandises[1].type,
-      quantity: 25
+      order: orders.find(o => o.stock.name === 'Almoxarifado') || orders[1],
+      merchandiseType: merchandises.find(m => m.type.name.includes('Caneta'))?.type || merchandises[16]?.type,
+      quantity: 150
     },
     {
-      order: orders[2],
-  merchandiseType: merchandises[2].type,
+      order: orders.find(o => o.stock.name === 'Almoxarifado') || orders[1],
+      merchandiseType: merchandises.find(m => m.type.name.includes('Computador'))?.type || merchandises[26]?.type,
+      quantity: 3
+    },
+    {
+      order: orders.find(o => o.stock.name === 'Almoxarifado') || orders[1],
+      merchandiseType: merchandises.find(m => m.type.name.includes('Monitor'))?.type || merchandises[27]?.type,
       quantity: 5
-    },
-    {
-      order: orders[3],
-  merchandiseType: merchandises[0].type,
-      quantity: 15
-    },
-    {
-      order: orders[4],
-  merchandiseType: merchandises[1].type,
-      quantity: 30
     }
   ];
+
+  // Adicionar itens específicos apenas se os tipos existem
+  for (const item of specificItems) {
+    if (item.merchandiseType) {
+      orderItems.push(item);
+    }
+  }
 
   const createdOrderItems: OrderItem[] = [];
 
@@ -507,9 +1027,10 @@ async function seedOrderItems(orders: Order[], merchandises: Merchandise[]) {
     const savedOrderItem = await orderItemRepository.save(orderItem);
     createdOrderItems.push(savedOrderItem);
 
-    console.log(`Item de pedido criado: Tipo=${itemData.merchandiseType.name} (id=${itemData.merchandiseType.id}) - Qtd: ${itemData.quantity}`);
+    console.log(`Item de pedido criado: Pedido=${itemData.order.id} - Tipo=${itemData.merchandiseType.name} - Qtd: ${itemData.quantity} - Estoque: ${itemData.order.stock.name}`);
   }
 
+  console.log(`Total de itens de pedido criados: ${createdOrderItems.length}`);
   return createdOrderItems;
 }
 
