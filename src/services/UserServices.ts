@@ -88,8 +88,7 @@ export class UserServices {
   async createUser(user: UsersType) {
     try {
       await usersRepository.isValidUser(user);
-      await usersRepository.createFireBaseUser(user);
-      return "Usuario cadastrado com sucesso";
+      return await usersRepository.createFireBaseUser(user);
     } catch (error) {
       await adminFirebase.auth().deleteUser(user.firebaseUid);
       throw error;

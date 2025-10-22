@@ -24,7 +24,7 @@ export class UsersRepository {
     }
 
     // Função para criar o usuarios
-    async create(user: UsersType) {
+    async create(user: Partial<UsersType>) {
         try {
             const savedUser = await repository.save(user)
 
