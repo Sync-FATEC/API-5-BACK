@@ -494,7 +494,7 @@ export class ReportService {
         });
 
         // Buscar pedidos por seção
-        const ordersBySectionQuery = await this.orderRepository
+        let ordersBySectionQuery = this.orderRepository
             .createQueryBuilder('order')
             .innerJoin('order.section', 'section')
             .select('section.id', 'sectionId')
@@ -502,11 +502,28 @@ export class ReportService {
             .addSelect('COUNT(order.id)', 'orderCount')
             .where('order.stockId = :stockId', { stockId })
             .groupBy('section.id, section.name')
-            .orderBy('"orderCount"', 'DESC')
-            .getRawMany();
+            .orderBy('"orderCount"', 'DESC');
+
+        // Aplicar filtros de data se fornecidos
+        if (startDate && endDate) {
+            ordersBySectionQuery = ordersBySectionQuery.andWhere('order.creationDate BETWEEN :startDate AND :endDate', {
+                startDate: new Date(startDate),
+                endDate: new Date(endDate)
+            });
+        } else if (startDate) {
+            ordersBySectionQuery = ordersBySectionQuery.andWhere('order.creationDate >= :startDate', {
+                startDate: new Date(startDate)
+            });
+        } else if (endDate) {
+            ordersBySectionQuery = ordersBySectionQuery.andWhere('order.creationDate <= :endDate', {
+                endDate: new Date(endDate)
+            });
+        }
+
+        const ordersBySectionResult = await ordersBySectionQuery.getRawMany();
 
         // Calcular percentuais
-        return ordersBySectionQuery.map(item => ({
+        return ordersBySectionResult.map(item => ({
             sectionId: item.sectionId,
             sectionName: item.sectionName,
             orderCount: parseInt(item.orderCount),
@@ -530,7 +547,7 @@ export class ReportService {
         }
 
         // Buscar top produtos por quantidade
-        const topProductsQuery = await this.orderItemRepository
+        let topProductsQuery = this.orderItemRepository
             .createQueryBuilder('orderItem')
             .innerJoin('orderItem.merchandiseType', 'merchandiseType')
             .innerJoin('orderItem.order', 'order')
@@ -542,10 +559,27 @@ export class ReportService {
             .where('stock.id = :stockId', { stockId })
             .groupBy('merchandiseType.id, merchandiseType.name')
             .orderBy('"totalQuantity"', 'DESC')
-            .limit(20)
-            .getRawMany();
+            .limit(20);
 
-        return topProductsQuery.map(item => ({
+        // Aplicar filtros de data se fornecidos
+        if (startDate && endDate) {
+            topProductsQuery = topProductsQuery.andWhere('order.creationDate BETWEEN :startDate AND :endDate', {
+                startDate: new Date(startDate),
+                endDate: new Date(endDate)
+            });
+        } else if (startDate) {
+            topProductsQuery = topProductsQuery.andWhere('order.creationDate >= :startDate', {
+                startDate: new Date(startDate)
+            });
+        } else if (endDate) {
+            topProductsQuery = topProductsQuery.andWhere('order.creationDate <= :endDate', {
+                endDate: new Date(endDate)
+            });
+        }
+
+        const topProductsResult = await topProductsQuery.getRawMany();
+
+        return topProductsResult.map(item => ({
             merchandiseTypeId: item.merchandiseTypeId,
             name: item.name,
             totalQuantity: parseInt(item.totalQuantity),

@@ -227,21 +227,21 @@ async function seedBatches() {
   const batchRepository = AppDataSource.getRepository(Batch);
 
   const batches = [
-    { expirationDate: new Date('2025-12-31') },
-    { expirationDate: new Date('2026-06-30') },
-    { expirationDate: new Date('2025-08-15') },
     { expirationDate: new Date('2026-12-31') },
-    { expirationDate: new Date('2025-09-30') },
-    { expirationDate: new Date('2027-03-15') },
-    { expirationDate: new Date('2025-11-20') },
-    { expirationDate: new Date('2026-04-10') },
-    { expirationDate: new Date('2025-07-25') },
-    { expirationDate: new Date('2026-10-05') },
-    { expirationDate: new Date('2027-01-30') },
-    { expirationDate: new Date('2025-10-12') },
-    { expirationDate: new Date('2026-08-18') },
-    { expirationDate: new Date('2025-06-22') },
-    { expirationDate: new Date('2027-05-14') }
+    { expirationDate: new Date('2027-06-30') },
+    { expirationDate: new Date('2026-08-15') },
+    { expirationDate: new Date('2027-12-31') },
+    { expirationDate: new Date('2026-09-30') },
+    { expirationDate: new Date('2028-03-15') },
+    { expirationDate: new Date('2026-11-20') },
+    { expirationDate: new Date('2027-04-10') },
+    { expirationDate: new Date('2026-07-25') },
+    { expirationDate: new Date('2027-10-05') },
+    { expirationDate: new Date('2028-01-30') },
+    { expirationDate: new Date('2026-12-12') },
+    { expirationDate: new Date('2027-08-18') },
+    { expirationDate: new Date('2026-06-22') },
+    { expirationDate: new Date('2028-05-14') }
   ];
 
   const createdBatches: Batch[] = [];
@@ -664,30 +664,83 @@ async function seedMerchandises(batches: Batch[], merchandiseTypes: MerchandiseT
   console.log("=== Criando Mercadorias ===");
   const merchandiseRepository = AppDataSource.getRepository(Merchandise);
 
-  const merchandises = [
-    {
-      batch: batches[0],
-      type: merchandiseTypes[0],
-      quantity: 500,
-      status: MerchandiseStatus.AVAILABLE
-    },
-    {
-      batch: batches[1],
-      type: merchandiseTypes[1],
-      quantity: 200,
-      status: MerchandiseStatus.AVAILABLE
-    },
-    {
-      batch: batches[2],
-      type: merchandiseTypes[2],
-      quantity: 25,
-      status: MerchandiseStatus.RESERVED
+  // Função para calcular quantidade baseada no tipo de alerta desejado
+  const calculateQuantityForAlert = (minimumStock: number, alertType: 'critical' | 'warning' | 'normal') => {
+    switch (alertType) {
+      case 'critical':
+        // Cenário 1: Abaixo do mínimo (0 a minimumStock)
+        // Cenário 2: Até 50% acima do mínimo
+        const scenarios = [
+          Math.floor(minimumStock * 0.8), // 80% do mínimo (abaixo)
+          Math.floor(minimumStock * 1.3)  // 30% acima do mínimo (critical)
+        ];
+        return scenarios[Math.floor(Math.random() * scenarios.length)];
+      
+      case 'warning':
+        // Entre 50% e 85% acima do mínimo
+        const warningMin = minimumStock * 1.5; // 50% acima
+        const warningMax = minimumStock * 1.85; // 85% acima
+        return Math.floor(warningMin + Math.random() * (warningMax - warningMin));
+      
+      case 'normal':
+        // Mais de 85% acima do mínimo
+        const normalMin = minimumStock * 1.9; // 90% acima
+        const normalMax = minimumStock * 3; // 200% acima
+        return Math.floor(normalMin + Math.random() * (normalMax - normalMin));
+      
+      default:
+        return minimumStock;
     }
-  ];
+  };
+
+  // Criar mercadorias para gerar diferentes tipos de alertas
+  const merchandisesToCreate = [];
+
+  // Distribuir tipos de alertas pelos tipos de mercadoria
+  for (let i = 0; i < merchandiseTypes.length; i++) {
+    const type = merchandiseTypes[i];
+    let alertType: 'critical' | 'warning' | 'normal';
+    
+    // Distribuição: 30% critical, 40% warning, 30% normal
+    const rand = Math.random();
+    if (rand < 0.3) {
+      alertType = 'critical';
+    } else if (rand < 0.7) {
+      alertType = 'warning';
+    } else {
+      alertType = 'normal';
+    }
+
+    const quantity = calculateQuantityForAlert(type.minimumStock, alertType);
+    const batchIndex = i % batches.length;
+    
+    merchandisesToCreate.push({
+      batch: batches[batchIndex],
+      type: type,
+      quantity: quantity,
+      status: MerchandiseStatus.AVAILABLE,
+      alertType: alertType // Para log
+    });
+  }
+
+  // Garantir que temos pelo menos um exemplo de cada tipo de alerta
+  if (merchandiseTypes.length >= 3) {
+    // Forçar um critical (estoque zero)
+    merchandisesToCreate[0].quantity = 0;
+    merchandisesToCreate[0].alertType = 'critical';
+    
+    // Forçar um critical (abaixo do mínimo)
+    merchandisesToCreate[1].quantity = Math.floor(merchandiseTypes[1].minimumStock * 0.5);
+    merchandisesToCreate[1].alertType = 'critical';
+    
+    // Forçar um warning
+    merchandisesToCreate[2].quantity = Math.floor(merchandiseTypes[2].minimumStock * 1.7); // 70% acima
+    merchandisesToCreate[2].alertType = 'warning';
+  }
 
   const createdMerchandises: Merchandise[] = [];
 
-  for (const merchData of merchandises) {
+  for (const merchData of merchandisesToCreate) {
     const merchandise = new Merchandise();
     merchandise.batchId = merchData.batch.id;
     merchandise.typeId = merchData.type.id;
@@ -699,8 +752,24 @@ async function seedMerchandises(batches: Batch[], merchandiseTypes: MerchandiseT
     const savedMerchandise = await merchandiseRepository.save(merchandise);
     createdMerchandises.push(savedMerchandise);
 
-    console.log(`Mercadoria criada: ${merchData.type.name} - Qtd: ${merchData.quantity} (${merchData.status})`);
+    // Calcular percentual para log
+    const percentageAboveMinimum = merchData.quantity > 0 
+      ? ((merchData.quantity - merchData.type.minimumStock) / merchData.type.minimumStock) * 100
+      : -100;
+
+    console.log(`Mercadoria criada: ${merchData.type.name}`);
+    console.log(`  - Qtd: ${merchData.quantity} | Mínimo: ${merchData.type.minimumStock}`);
+    console.log(`  - Percentual: ${percentageAboveMinimum.toFixed(1)}% | Alerta: ${merchData.alertType}`);
+    console.log(`  - Status: ${merchData.status}`);
   }
+
+  console.log(`\n=== Resumo de Alertas Gerados ===`);
+  const alertCounts = {
+    critical: merchandisesToCreate.filter(m => m.alertType === 'critical').length,
+    warning: merchandisesToCreate.filter(m => m.alertType === 'warning').length,
+    normal: merchandisesToCreate.filter(m => m.alertType === 'normal').length
+  };
+  console.log(`Critical: ${alertCounts.critical} | Warning: ${alertCounts.warning} | Normal: ${alertCounts.normal}`);
 
   return createdMerchandises;
 }
@@ -758,7 +827,7 @@ async function seedOrders(sections: Section[], stocks: Stock[]) {
   // Função auxiliar para gerar status aleatório
   const getRandomStatus = () => {
     const statuses = ["COMPLETED", "PENDING", "CANCELLED"];
-    const weights = [0.6, 0.3, 0.1]; // 60% completed, 30% pending, 10% cancelled
+    const weights = [0.6, 0.4, 0.0]; // 60% completed, 30% pending, 10% cancelled
     const random = Math.random();
     if (random < weights[0]) return statuses[0];
     if (random < weights[0] + weights[1]) return statuses[1];
@@ -768,8 +837,8 @@ async function seedOrders(sections: Section[], stocks: Stock[]) {
   const orders = [];
   
   // Gerar muitos pedidos com datas variadas (últimos 2 anos)
-  const startDate = new Date('2023-01-01');
-  const endDate = new Date('2025-01-31');
+  const startDate = new Date('2023-10-24');
+  const endDate = new Date('2025-10-24');
   
   // Criar 150 pedidos variados
   for (let i = 0; i < 150; i++) {
@@ -807,35 +876,35 @@ async function seedOrders(sections: Section[], stocks: Stock[]) {
   const specificOrders = [
     // Pedidos da Farmácia
     {
-      creationDate: new Date('2024-12-01'),
-      withdrawalDate: new Date('2024-12-03'),
+      creationDate: new Date('2025-09-01'),
+      withdrawalDate: new Date('2025-09-03'),
       status: "COMPLETED",
       section: sections.find(s => s.name === 'Emergência') || sections[0],
       stock: stocks[0] // Farmácia
     },
     {
-      creationDate: new Date('2024-12-15'),
-      withdrawalDate: new Date('2024-12-18'),
+      creationDate: new Date('2025-09-15'),
+      withdrawalDate: new Date('2025-09-18'),
       status: "COMPLETED",
       section: sections.find(s => s.name === 'Cardiologia') || sections[1],
       stock: stocks[0] // Farmácia
     },
     {
-      creationDate: new Date('2025-01-05'),
+      creationDate: new Date('2025-10-05'),
       withdrawalDate: null,
       status: "PENDING",
       section: sections.find(s => s.name === 'UTI') || sections[5],
       stock: stocks[0] // Farmácia
     },
     {
-      creationDate: new Date('2025-01-10'),
+      creationDate: new Date('2025-10-10'),
       withdrawalDate: null,
       status: "PENDING",
       section: sections.find(s => s.name === 'Oncologia') || sections[6],
       stock: stocks[0] // Farmácia
     },
     {
-      creationDate: new Date('2025-01-20'),
+      creationDate: new Date('2025-10-20'),
       withdrawalDate: null,
       status: "PENDING",
       section: sections.find(s => s.name === 'Pediatria') || sections[3],
@@ -844,35 +913,35 @@ async function seedOrders(sections: Section[], stocks: Stock[]) {
 
     // Pedidos do Almoxarifado
     {
-      creationDate: new Date('2024-11-20'),
-      withdrawalDate: new Date('2024-11-25'),
+      creationDate: new Date('2025-08-20'),
+      withdrawalDate: new Date('2025-08-25'),
       status: "COMPLETED",
       section: sections.find(s => s.name === 'Tecnologia da Informação') || sections[10],
       stock: stocks[1] // Almoxarifado
     },
     {
-      creationDate: new Date('2024-12-10'),
-      withdrawalDate: new Date('2024-12-12'),
+      creationDate: new Date('2025-09-10'),
+      withdrawalDate: new Date('2025-09-12'),
       status: "COMPLETED",
       section: sections.find(s => s.name === 'Recursos Humanos') || sections[8],
       stock: stocks[1] // Almoxarifado
     },
     {
-      creationDate: new Date('2025-01-08'),
+      creationDate: new Date('2025-10-08'),
       withdrawalDate: null,
       status: "PENDING",
       section: sections.find(s => s.name === 'Financeiro') || sections[9],
       stock: stocks[1] // Almoxarifado
     },
     {
-      creationDate: new Date('2025-01-15'),
+      creationDate: new Date('2025-10-15'),
       withdrawalDate: null,
       status: "PENDING",
       section: sections.find(s => s.name === 'Marketing') || sections[14],
       stock: stocks[1] // Almoxarifado
     },
     {
-      creationDate: new Date('2025-01-25'),
+      creationDate: new Date('2025-10-22'),
       withdrawalDate: null,
       status: "PENDING",
       section: sections.find(s => s.name === 'Compras') || sections[12],
