@@ -138,7 +138,12 @@ export class UserServices {
         role: user.role,
         validUntil: user.validUntil,
         createdAt: user.createdAt,
-        isActive: user.isActive
+        isActive: user.isActive,
+        stocks: user.userStocks.map(userStock => ({
+          stockId: userStock.stockId,
+          stockName: userStock.stock.name,
+          responsibility: userStock.responsibility
+        }))
       }));
     } catch (error) {
       console.error("Erro ao buscar todos os usuários:", error);

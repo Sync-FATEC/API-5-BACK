@@ -143,6 +143,11 @@ export class UsersRepository {
     async getAllUsers() {
         try {
             return await repository.find({
+                relations: {
+                    userStocks: {
+                        stock: true
+                    }
+                },
                 order: {
                     createdAt: 'DESC'
                 }

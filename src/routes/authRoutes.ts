@@ -244,7 +244,7 @@ router.delete("/users/:id", userController.deleteUser);
  *                 type: string
  *               responsibility:
  *                 type: string
- *                 enum: [USER, MANAGER, ADMIN]
+ *                 enum: [SOLDADO, SUPERVISOR, ADMIN]
  *     responses:
  *       200:
  *         description: Usuário vinculado ao estoque com sucesso
