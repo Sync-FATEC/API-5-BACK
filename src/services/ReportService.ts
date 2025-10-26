@@ -424,32 +424,32 @@ export class ReportService {
      */
     async getProductStatusData(params: ReportParams): Promise<ProductStatusData> {
         const { stockId } = params;
-        
+
         // Buscar todos os tipos de mercadorias e suas mercadorias
         const merchandiseTypes = await this.merchandiseTypeRepository.find({
             where: { stock: { id: stockId } },
             relations: ['merchandises']
         });
-        
+
         let total = 0;
         let inStock = 0;
         let lowStock = 0;
         let critical = 0;
-        
+
         const byType: ProductStatusData['byType'] = [];
-        
+
         // Para cada tipo, calcular métricas
         for (const type of merchandiseTypes) {
             const typeTotal = type.merchandises?.length || 0;
             const typeInStock = type.merchandises?.filter(m => m.quantity > type.minimumStock).length || 0;
             const typeLowStock = type.merchandises?.filter(m => m.quantity <= type.minimumStock && m.quantity > 0).length || 0;
             const typeCritical = type.merchandises?.filter(m => m.quantity === 0).length || 0;
-            
+
             total += typeTotal;
             inStock += typeInStock;
             lowStock += typeLowStock;
             critical += typeCritical;
-            
+
             byType.push({
                 typeName: type.name,
                 total: typeTotal,
@@ -458,7 +458,7 @@ export class ReportService {
                 critical: typeCritical
             });
         }
-        
+
         return {
             total,
             inStock,
@@ -786,87 +786,191 @@ export class ReportService {
         return Buffer.from(await workbook.xlsx.writeBuffer());
     }
 
-    /**
-     * Gera um relatório completo em PDF com todos os dados dos dashboards
-     */
-    async generateCompleteDashboardPDFReport(params: ReportParams): Promise<Buffer> {
-        const dashboardData = await this.getCompleteDashboardData(params);
+ async generateCompleteDashboardPDFReport(params: ReportParams): Promise<Buffer> {
+    const dashboardData = await this.getCompleteDashboardData(params);
 
-        return new Promise((resolve, reject) => {
-            try {
-                const doc = new PDFDocument();
-                const buffers: Buffer[] = [];
+    return new Promise((resolve, reject) => {
+      try {
+        const doc = new PDFDocument({ margin: 50 });
+        const buffers: Buffer[] = [];
 
-                doc.on('data', buffers.push.bind(buffers));
-                doc.on('end', () => {
-                    const pdfBuffer = Buffer.concat(buffers);
-                    resolve(pdfBuffer);
-                });
+        doc.on('data', buffers.push.bind(buffers));
+        doc.on('end', () => resolve(Buffer.concat(buffers)));
 
-                // Cabeçalho
-                doc.fontSize(20).text('RELATÓRIO COMPLETO DO DASHBOARD', { align: 'center' });
-                doc.moveDown();
+        // 🎨 Paleta de cores
+        const colors = {
+          primary: '#2E78E4',
+          green: '#00C896',
+          red: '#DC3A3A',
+          orange: '#FFA800',
+          gray: '#828488',
+          lightGray: '#EAEAEA',
+        };
 
-                doc.fontSize(12);
-                doc.text(`Gerado em: ${new Date().toLocaleString('pt-BR')}`);
-                doc.text(`Estoque: ${dashboardData.stockInfo.name}`);
-                doc.text(`Localização: ${dashboardData.stockInfo.location}`);
-                doc.moveDown();
+        // ==================================================
+        // 🔹 Cabeçalho
+        // ==================================================
+        doc
+          .fillColor(colors.primary)
+          .fontSize(24)
+          .font('Helvetica-Bold')
+          .text('RELATÓRIO COMPLETO DO DASHBOARD', { align: 'center' })
+          .moveDown(1);
 
-                // Pedidos por período
-                doc.fontSize(16).text('PEDIDOS POR PERÍODO');
-                doc.fontSize(12);
-                if (dashboardData.ordersByPeriod.orders.length > 0) {
-                    dashboardData.ordersByPeriod.orders.forEach((order: OrderViewModel) => {
-                        const itemsText = order.orderItems.map(item => `${item.merchandiseName} (${item.quantity})`).join(', ');
-                        doc.text(`Pedido ${order.id} - ${order.creationDate} - ${order.status} - ${order.sectionName}`);
-                        doc.text(`  Itens: ${itemsText}`);
-                        doc.moveDown(0.5);
-                    });
-                } else {
-                    doc.text('Nenhum pedido encontrado no período especificado.');
-                }
-                doc.moveDown();
-                doc.fontSize(16).text('STATUS DE PRODUTOS');
-                doc.fontSize(12);
-                doc.text(`Total: ${dashboardData.productStatus.total}`);
-                doc.text(`Em Estoque (Normal): ${dashboardData.productStatus.inStock}`);
-                doc.text(`Estoque Baixo: ${dashboardData.productStatus.lowStock}`);
-                doc.text(`Crítico: ${dashboardData.productStatus.critical}`);
-                doc.moveDown();
+        doc
+          .moveTo(50, doc.y)
+          .lineTo(550, doc.y)
+          .strokeColor(colors.primary)
+          .lineWidth(1.5)
+          .stroke()
+          .moveDown(1.5);
 
-                // Pedidos por seção
-                doc.addPage();
-                doc.fontSize(16).text('PEDIDOS POR SEÇÃO');
-                doc.fontSize(12);
-                dashboardData.ordersBySection.forEach(item => {
-                    doc.text(`${item.sectionName}: ${item.orderCount} pedidos (${item.percentage.toFixed(2)}%)`);
-                });
-                doc.moveDown();
+        doc
+          .fontSize(12)
+          .fillColor(colors.gray)
+          .font('Helvetica')
+          .text(`Gerado em: ${new Date().toLocaleString('pt-BR')}`)
+          .text(`Estoque: ${dashboardData.stockInfo.name}`)
+          .text(`Localização: ${dashboardData.stockInfo.location}`)
+          .moveDown(2);
 
-                // Produtos mais solicitados
-                doc.fontSize(16).text('PRODUTOS MAIS SOLICITADOS');
-                doc.fontSize(12);
-                dashboardData.topProducts.slice(0, 10).forEach((item, index) => {
-                    doc.text(`${index + 1}. ${item.name}: ${item.totalQuantity} unidades (${item.orderCount} pedidos)`);
-                });
-                doc.moveDown();
+        // ==================================================
+        // 📊 RESUMO GERAL
+        // ==================================================
 
-                // Alertas de estoque
-                doc.addPage();
-                doc.fontSize(16).text('ALERTAS DE ESTOQUE');
-                doc.fontSize(12);
-                dashboardData.stockAlerts.forEach(item => {
-                    const status = item.status === 'critical' ? 'CRÍTICO' : 'BAIXO';
-                    doc.text(`${item.name}: ${item.inStock}/${item.minimumStock} - ${status}`);
-                });
+        // ==================================================
+        // 🧾 STATUS DE PRODUTOS
+        // ==================================================
+        this.sectionTitle(doc, 'STATUS DE PRODUTOS', colors.primary);
+        const status = dashboardData.productStatus;
+        this.addMetric(doc, 'Total de Produtos', status.total, colors.primary);
+        this.addMetric(doc, 'Em Estoque (Normal)', status.inStock, colors.green);
+        this.addMetric(doc, 'Estoque Baixo', status.lowStock, colors.orange);
+        this.addMetric(doc, 'Crítico', status.critical, colors.red);
 
-                doc.end();
-            } catch (error) {
-                reject(error);
-            }
+        doc.moveDown(1.5);
+
+        // ==================================================
+        // 🏬 PEDIDOS POR SEÇÃO
+        // ==================================================
+        doc.addPage();
+        this.sectionTitle(doc, 'PEDIDOS POR SEÇÃO', colors.primary);
+        doc.font('Helvetica').fontSize(12).fillColor(colors.gray);
+
+        dashboardData.ordersBySection.forEach((item) => {
+          const barWidth = Math.min(item.percentage * 4, 400);
+          const y = doc.y;
+
+          doc.text(`${item.sectionName}: ${item.orderCount} pedidos (${item.percentage.toFixed(1)}%)`, 50, y);
+          doc
+            .rect(50, y + 15, barWidth, 6)
+            .fillColor(colors.primary)
+            .fill();
+          doc.moveDown(1);
         });
-    }
+
+        // ==================================================
+        // 🥇 TOP PRODUTOS MAIS SOLICITADOS
+        // ==================================================
+        doc.addPage();
+        this.sectionTitle(doc, 'TOP 10 PRODUTOS MAIS SOLICITADOS', colors.primary);
+        dashboardData.topProducts.slice(0, 10).forEach((item, index) => {
+          doc
+            .font('Helvetica-Bold')
+            .fontSize(12)
+            .fillColor(colors.primary)
+            .text(`${index + 1}. ${item.name}`)
+            .moveDown(0.2);
+
+          doc
+            .font('Helvetica')
+            .fontSize(10)
+            .fillColor(colors.gray)
+            .text(`${item.totalQuantity} unidades — ${item.orderCount} pedidos`)
+            .moveDown(0.5);
+        });
+
+        // ==================================================
+        // 🚨 ALERTAS DE ESTOQUE
+        // ==================================================
+        doc.addPage();
+        this.sectionTitle(doc, 'ALERTAS DE ESTOQUE', colors.primary);
+
+        dashboardData.stockAlerts.forEach((item) => {
+          const isCritical = item.status === 'critical';
+          const statusLabel = isCritical ? 'CRÍTICO' : 'BAIXO';
+          const statusColor = isCritical ? colors.red : colors.orange;
+
+          doc
+            .font('Helvetica-Bold')
+            .fontSize(12)
+            .fillColor(statusColor)
+            .text(item.name)
+            .moveDown(0.2);
+
+          doc
+            .font('Helvetica')
+            .fontSize(10)
+            .fillColor(colors.gray)
+            .text(`Em estoque: ${item.inStock}/${item.minimumStock} — ${statusLabel}`)
+            .moveDown(0.6);
+
+          doc
+            .moveTo(50, doc.y)
+            .lineTo(550, doc.y)
+            .strokeColor(colors.lightGray)
+            .lineWidth(0.5)
+            .stroke()
+            .moveDown(0.8);
+        });
+
+        // ==================================================
+        // 🧩 Rodapé
+        // ==================================================
+        doc.moveDown(2);
+        doc
+          .fontSize(10)
+          .fillColor(colors.gray)
+          .text('Relatório completo gerado automaticamente pelo sistema API 2025', {
+            align: 'center',
+          });
+
+        doc.end();
+      } catch (error) {
+        reject(error);
+      }
+    });
+  }
+
+  // ==================================================
+  // 🔧 Métodos auxiliares
+  // ==================================================
+
+  private sectionTitle(doc: PDFKit.PDFDocument, title: string, color: string) {
+    doc
+      .fontSize(16)
+      .font('Helvetica-Bold')
+      .fillColor(color)
+      .text(title)
+      .moveDown(0.4);
+
+    doc
+      .moveTo(50, doc.y)
+      .lineTo(550, doc.y)
+      .strokeColor(color)
+      .lineWidth(0.8)
+      .stroke()
+      .moveDown(1);
+  }
+
+  private addMetric(doc: PDFKit.PDFDocument, label: string, value: number | string, color: string) {
+    doc
+      .font('Helvetica-Bold')
+      .fontSize(13)
+      .fillColor(color)
+      .text(`${label}: ${value}`)
+      .moveDown(0.4);
+  }
 
     // Método auxiliar para obter o número da semana do ano
     private getWeekNumber(d: Date): number {
