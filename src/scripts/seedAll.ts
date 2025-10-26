@@ -17,7 +17,8 @@ import { Order } from "../database/entities/Order";
 import { OrderItem } from "../database/entities/OrderItem";
 import { Section } from "../database/entities/Section";
 import { Supplier } from "../database/entities/Supplier";
-
+import { MerchandiseService } from "../services/MerchandiseService";
+import { OrderService } from "../services/OrderService";
 
 config();
 
@@ -645,7 +646,7 @@ async function seedMerchandiseTypes(stocks: Stock[]) {
     merchandiseType.name = typeData.name;
     merchandiseType.recordNumber = typeData.recordNumber;
     merchandiseType.unitOfMeasure = typeData.unitOfMeasure;
-    merchandiseType.quantityTotal = typeData.quantityTotal;
+    merchandiseType.quantityTotal = 0;
     merchandiseType.controlled = typeData.controlled;
     merchandiseType.group = typeData.group;
     merchandiseType.minimumStock = typeData.minimumStock;
@@ -662,7 +663,7 @@ async function seedMerchandiseTypes(stocks: Stock[]) {
 
 async function seedMerchandises(batches: Batch[], merchandiseTypes: MerchandiseType[]) {
   console.log("=== Criando Mercadorias ===");
-  const merchandiseRepository = AppDataSource.getRepository(Merchandise);
+  const merchandiseService = new MerchandiseService();
 
   // Função para calcular quantidade baseada no tipo de alerta desejado
   const calculateQuantityForAlert = (minimumStock: number, alertType: 'critical' | 'warning' | 'normal') => {
@@ -693,83 +694,125 @@ async function seedMerchandises(batches: Batch[], merchandiseTypes: MerchandiseT
     }
   };
 
-  // Criar mercadorias para gerar diferentes tipos de alertas
+  // Criar múltiplas entradas para cada tipo de mercadoria
   const merchandisesToCreate = [];
 
-  // Distribuir tipos de alertas pelos tipos de mercadoria
+  // Para cada tipo de mercadoria, criar 2-5 entradas
   for (let i = 0; i < merchandiseTypes.length; i++) {
     const type = merchandiseTypes[i];
-    let alertType: 'critical' | 'warning' | 'normal';
+    const numEntries = Math.floor(Math.random() * 4) + 2; // 2-5 entradas
     
-    // Distribuição: 30% critical, 40% warning, 30% normal
+    // Determinar o tipo de alerta final desejado para este tipo
+    let finalAlertType: 'critical' | 'warning' | 'normal';
     const rand = Math.random();
     if (rand < 0.3) {
-      alertType = 'critical';
+      finalAlertType = 'critical';
     } else if (rand < 0.7) {
-      alertType = 'warning';
+      finalAlertType = 'warning';
     } else {
-      alertType = 'normal';
+      finalAlertType = 'normal';
     }
 
-    const quantity = calculateQuantityForAlert(type.minimumStock, alertType);
-    const batchIndex = i % batches.length;
+    // Calcular quantidade total necessária para atingir o alerta desejado
+    const totalQuantityNeeded = calculateQuantityForAlert(type.minimumStock, finalAlertType);
     
-    merchandisesToCreate.push({
-      batch: batches[batchIndex],
-      type: type,
-      quantity: quantity,
-      status: MerchandiseStatus.AVAILABLE,
-      alertType: alertType // Para log
-    });
+    // Distribuir a quantidade total entre as múltiplas entradas
+    const quantities: number[] = [];
+    let remainingQuantity = totalQuantityNeeded;
+    
+    for (let j = 0; j < numEntries; j++) {
+      if (j === numEntries - 1) {
+        // Última entrada recebe o restante
+        quantities.push(Math.max(0, remainingQuantity));
+      } else {
+        // Entradas anteriores recebem uma porção aleatória
+        const maxForThisEntry = Math.floor(remainingQuantity * 0.6); // Máximo 60% do restante
+        const minForThisEntry = Math.floor(remainingQuantity * 0.1); // Mínimo 10% do restante
+        const quantityForThisEntry = Math.floor(Math.random() * (maxForThisEntry - minForThisEntry + 1)) + minForThisEntry;
+        quantities.push(quantityForThisEntry);
+        remainingQuantity -= quantityForThisEntry;
+      }
+    }
+
+    // Criar as entradas para este tipo
+    for (let j = 0; j < numEntries; j++) {
+      const batchIndex = (i * numEntries + j) % batches.length;
+      
+      merchandisesToCreate.push({
+        batch: batches[batchIndex],
+        type: type,
+        quantity: quantities[j],
+        status: MerchandiseStatus.AVAILABLE,
+        alertType: j === numEntries - 1 ? finalAlertType : 'entry', // Marcar apenas a última entrada com o tipo de alerta
+        entryNumber: j + 1,
+        totalEntries: numEntries
+      });
+    }
   }
 
   // Garantir que temos pelo menos um exemplo de cada tipo de alerta
   if (merchandiseTypes.length >= 3) {
-    // Forçar um critical (estoque zero)
-    merchandisesToCreate[0].quantity = 0;
-    merchandisesToCreate[0].alertType = 'critical';
+    // Encontrar as últimas entradas dos primeiros 3 tipos para forçar alertas específicos
+    const firstTypeEntries = merchandisesToCreate.filter(m => m.type.id === merchandiseTypes[0].id);
+    const secondTypeEntries = merchandisesToCreate.filter(m => m.type.id === merchandiseTypes[1].id);
+    const thirdTypeEntries = merchandisesToCreate.filter(m => m.type.id === merchandiseTypes[2].id);
     
-    // Forçar um critical (abaixo do mínimo)
-    merchandisesToCreate[1].quantity = Math.floor(merchandiseTypes[1].minimumStock * 0.5);
-    merchandisesToCreate[1].alertType = 'critical';
+    if (firstTypeEntries.length > 0) {
+      // Forçar um critical (estoque zero) - zerar todas as entradas do primeiro tipo
+      firstTypeEntries.forEach(entry => entry.quantity = 0);
+      firstTypeEntries[firstTypeEntries.length - 1].alertType = 'critical';
+    }
     
-    // Forçar um warning
-    merchandisesToCreate[2].quantity = Math.floor(merchandiseTypes[2].minimumStock * 1.7); // 70% acima
-    merchandisesToCreate[2].alertType = 'warning';
+    if (secondTypeEntries.length > 0) {
+      // Forçar um critical (abaixo do mínimo) - ajustar apenas a última entrada
+      const totalOthers = secondTypeEntries.slice(0, -1).reduce((sum, entry) => sum + entry.quantity, 0);
+      const targetTotal = Math.floor(merchandiseTypes[1].minimumStock * 0.5);
+      secondTypeEntries[secondTypeEntries.length - 1].quantity = Math.max(0, targetTotal - totalOthers);
+      secondTypeEntries[secondTypeEntries.length - 1].alertType = 'critical';
+    }
+    
+    if (thirdTypeEntries.length > 0) {
+      // Forçar um warning - ajustar apenas a última entrada
+      const totalOthers = thirdTypeEntries.slice(0, -1).reduce((sum, entry) => sum + entry.quantity, 0);
+      const targetTotal = Math.floor(merchandiseTypes[2].minimumStock * 1.7); // 70% acima
+      thirdTypeEntries[thirdTypeEntries.length - 1].quantity = Math.max(0, targetTotal - totalOthers);
+      thirdTypeEntries[thirdTypeEntries.length - 1].alertType = 'warning';
+    }
   }
 
   const createdMerchandises: Merchandise[] = [];
 
   for (const merchData of merchandisesToCreate) {
-    const merchandise = new Merchandise();
-    merchandise.batchId = merchData.batch.id;
-    merchandise.typeId = merchData.type.id;
-    merchandise.quantity = merchData.quantity;
-    merchandise.status = merchData.status;
-    merchandise.batch = merchData.batch;
-    merchandise.type = merchData.type;
+    const payload = {
+      typeId: merchData.type.id,
+      quantity: merchData.quantity,
+      status: merchData.status,
+    } as const;
+    const validDate = merchData.batch.expirationDate;
 
-    const savedMerchandise = await merchandiseRepository.save(merchandise);
-    createdMerchandises.push(savedMerchandise);
+    const savedMerchandise = await merchandiseService.createMerchandise(payload, validDate);
+    createdMerchandises.push(savedMerchandise as unknown as Merchandise);
 
-    // Calcular percentual para log
-    const percentageAboveMinimum = merchData.quantity > 0 
-      ? ((merchData.quantity - merchData.type.minimumStock) / merchData.type.minimumStock) * 100
-      : -100;
-
-    console.log(`Mercadoria criada: ${merchData.type.name}`);
-    console.log(`  - Qtd: ${merchData.quantity} | Mínimo: ${merchData.type.minimumStock}`);
-    console.log(`  - Percentual: ${percentageAboveMinimum.toFixed(1)}% | Alerta: ${merchData.alertType}`);
+    console.log(`Entrada ${(merchData as any).entryNumber}/${(merchData as any).totalEntries} criada: ${merchData.type.name}`);
+    console.log(`  - Qtd: ${merchData.quantity} | Lote: ${merchData.batch.id.substring(0, 8)}...`);
     console.log(`  - Status: ${merchData.status}`);
   }
 
-  console.log(`\n=== Resumo de Alertas Gerados ===`);
+  console.log(`\n=== Resumo de Entradas Criadas ===`);
+  const totalEntries = merchandisesToCreate.length;
+  const uniqueTypes = new Set(merchandisesToCreate.map(m => m.type.id)).size;
+  const avgEntriesPerType = (totalEntries / uniqueTypes).toFixed(1);
+  
+  console.log(`Total de entradas: ${totalEntries}`);
+  console.log(`Tipos únicos: ${uniqueTypes}`);
+  console.log(`Média de entradas por tipo: ${avgEntriesPerType}`);
+  
   const alertCounts = {
     critical: merchandisesToCreate.filter(m => m.alertType === 'critical').length,
     warning: merchandisesToCreate.filter(m => m.alertType === 'warning').length,
     normal: merchandisesToCreate.filter(m => m.alertType === 'normal').length
   };
-  console.log(`Critical: ${alertCounts.critical} | Warning: ${alertCounts.warning} | Normal: ${alertCounts.normal}`);
+  console.log(`Alertas finais - Critical: ${alertCounts.critical} | Warning: ${alertCounts.warning} | Normal: ${alertCounts.normal}`);
 
   return createdMerchandises;
 }
@@ -815,9 +858,9 @@ async function seedSections() {
   return createdSections;
 }
 
-async function seedOrders(sections: Section[], stocks: Stock[]) {
+async function seedOrders(sections: Section[], stocks: Stock[], merchandiseTypes: MerchandiseType[]) {
   console.log("=== Criando Pedidos ===");
-  const orderRepository = AppDataSource.getRepository(Order);
+  const orderService = new OrderService();
   
   // Função auxiliar para gerar datas aleatórias
   const getRandomDate = (start: Date, end: Date) => {
@@ -826,50 +869,42 @@ async function seedOrders(sections: Section[], stocks: Stock[]) {
 
   // Função auxiliar para gerar status aleatório
   const getRandomStatus = () => {
-    const statuses = ["COMPLETED", "PENDING", "CANCELLED"];
-    const weights = [0.6, 0.4, 0.0]; // 60% completed, 30% pending, 10% cancelled
+    const statuses = ["PENDING", "COMPLETED", "CANCELLED"];
+    const weights = [0.4, 0.6, 0.0];
     const random = Math.random();
     if (random < weights[0]) return statuses[0];
     if (random < weights[0] + weights[1]) return statuses[1];
     return statuses[2];
   };
 
-  const orders = [];
-  
   // Gerar muitos pedidos com datas variadas (últimos 2 anos)
+  
   const startDate = new Date('2023-10-24');
   const endDate = new Date('2025-10-24');
   
-  // Criar 150 pedidos variados
+  const ordersInput: Array<{ creationDate: Date; withdrawalDate: Date | null; status: string; section: Section; stock: Stock }> = [];
+  
   for (let i = 0; i < 150; i++) {
     const creationDate = getRandomDate(startDate, endDate);
     const status = getRandomStatus();
     const section = sections[Math.floor(Math.random() * sections.length)];
     
-    // Determinar o stock baseado na seção
     let stock;
     if (section.name.includes('Emergência') || section.name.includes('Cardiologia') || 
         section.name.includes('Endocrinologia') || section.name.includes('Pediatria') ||
         section.name.includes('Cirurgia') || section.name.includes('UTI') ||
         section.name.includes('Oncologia') || section.name.includes('Neurologia')) {
-      stock = stocks[0]; // Farmácia
+      stock = stocks[0];
     } else {
-      stock = stocks[1]; // Almoxarifado
+      stock = stocks[1];
     }
 
-    let withdrawalDate = null;
+    let withdrawalDate: Date | null = null;
     if (status === "COMPLETED") {
-      // Para pedidos completos, adicionar 1-10 dias à data de criação
       withdrawalDate = new Date(creationDate.getTime() + (Math.random() * 10 + 1) * 24 * 60 * 60 * 1000);
     }
 
-    orders.push({
-      creationDate,
-      withdrawalDate,
-      status,
-      section,
-      stock
-    });
+    ordersInput.push({ creationDate, withdrawalDate, status, section, stock });
   }
 
   // Adicionar alguns pedidos específicos para garantir variedade
@@ -950,19 +985,65 @@ async function seedOrders(sections: Section[], stocks: Stock[]) {
   ];
 
   // Adicionar pedidos específicos à lista
-  orders.push(...specificOrders);
-  const createdOrders: Order[] = [];
-  for (const orderData of orders) {
-    const order = new Order();
-    order.creationDate = orderData.creationDate;
-    order.withdrawalDate = orderData.withdrawalDate as any;
-    order.status = orderData.status;
-    order.section = orderData.section;
-    order.stock = orderData.stock;
-    const savedOrder = await orderRepository.save(order);
-    createdOrders.push(savedOrder);
-    console.log(`Pedido criado: ${savedOrder.status} - Data: ${savedOrder.creationDate.toISOString().split('T')[0]} - Seção: ${savedOrder.section.name} - Estoque: ${savedOrder.stock.name}`);
+  ordersInput.push(...specificOrders);
+
+  // Função auxiliar para quantidade por grupo
+  const getRandomQuantityByType = (type: MerchandiseType) => {
+    if (type.group === MerchandiseGroup.ALMOX_VIRTUAL) {
+      return Math.floor(Math.random() * 191) + 10; // 10-200
+    }
+    if (type.group === MerchandiseGroup.PERMANENTE) {
+      return Math.floor(Math.random() * 10) + 1; // 1-10
+    }
+    return Math.floor(Math.random() * 96) + 5; // 5-100
+  };
+
+  const createdOrders: any[] = [];
+
+  for (const orderData of ordersInput) {
+    // Tipos disponíveis conforme estoque do pedido
+    let availableTypes = merchandiseTypes.filter(mt => (mt as any).stock?.id === orderData.stock.id || (mt as any).stockId === orderData.stock.id);
+    if (availableTypes.length === 0) availableTypes = merchandiseTypes;
+
+    const numItems = Math.floor(Math.random() * 8) + 1;
+    const usedTypes = new Set<string>();
+    const orderItemsDTO: { merchandiseId: string; quantity: number }[] = [];
+
+    for (let i = 0; i < numItems && usedTypes.size < availableTypes.length; i++) {
+      let type: MerchandiseType;
+      do {
+        type = availableTypes[Math.floor(Math.random() * availableTypes.length)];
+      } while (usedTypes.has(type.id));
+      usedTypes.add(type.id);
+
+      const desired = getRandomQuantityByType(type);
+      const maxQty = Math.max(0, type.quantityTotal);
+      const qty = Math.min(desired, maxQty);
+      if (qty > 0) {
+        orderItemsDTO.push({ merchandiseId: type.id, quantity: qty });
+        // Atualizar cache local para evitar pedir acima do disponível no mesmo pedido
+        type.quantityTotal -= qty;
+      }
+    }
+
+    const dto = {
+      creationDate: orderData.creationDate,
+      withdrawalDate: orderData.withdrawalDate,
+      status: orderData.status,
+      sectionId: orderData.section.id,
+      stockId: orderData.stock.id,
+      orderItems: orderItemsDTO
+    };
+
+    try {
+      const saved = await orderService.create(dto as any);
+      createdOrders.push(saved);
+      console.log(`Pedido criado: ${saved.status} - Data: ${saved.creationDate.toString().split('T')[0]} - Seção: ${orderData.section.name} - Estoque: ${orderData.stock.name} - Itens: ${saved.orderItems.length}`);
+    } catch (e) {
+      console.warn(`Falha ao criar pedido para seção ${orderData.section.name}: ${(e as any)?.message ?? e}`);
+    }
   }
+
   return createdOrders;
 }
 
@@ -1209,14 +1290,24 @@ async function seedAll() {
     // 7. Criar seções (independente)
     const sections = await seedSections();
 
-    // 8. Criar pedidos (depende de sections e stocks)
-    const orders = await seedOrders(sections, stocks);
+    // 8. Criar pedidos (depende de sections, stocks e merchandiseTypes)
+  const orders = await seedOrders(sections, stocks, merchandiseTypes);
 
-    // 9. Criar itens de pedido (depende de orders e merchandises)
-    const orderItems = await seedOrderItems(orders, merchandises);
+  // 9. Criar fornecedores (independente)
+  const suppliers = await seedSuppliers();
 
-    // 10. Criar fornecedores (independente)
-    const suppliers = await seedSuppliers();
+  // 10. Validar totais por tipo após saídas
+  console.log("\n🔎 Validando totais por tipo...");
+  const mtRepo = AppDataSource.getRepository(MerchandiseType);
+  const allTypes = await mtRepo.find();
+  let inconsistencies = 0;
+  for (const t of allTypes) {
+    if (t.quantityTotal < 0) {
+      inconsistencies++;
+      console.warn(`⚠️ Tipo ${t.name} com total negativo: ${t.quantityTotal}`);
+    }
+  }
+  console.log(`✅ Validação concluída. Inconsistências encontradas: ${inconsistencies}`);
 
     console.log("\n🎉 Seed completo executado com sucesso!");
     console.log("📊 Resumo:");
@@ -1228,7 +1319,6 @@ async function seedAll() {
     console.log(`   - ${merchandises.length} mercadorias criadas`);
     console.log(`   - ${sections.length} seções criadas`);
     console.log(`   - ${orders.length} pedidos criados`);
-    console.log(`   - ${orderItems.length} itens de pedido criados`);
     console.log(`   - ${suppliers.length} fornecedores criados`);
 
   } catch (error) {

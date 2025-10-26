@@ -164,4 +164,50 @@ export class MerchandiseTypeRepository {
             throw error;
         }
     }
+
+    async getMerchandisesWithBatches(merchandiseTypeId: string) {
+        try {
+            const merchandiseType = await repository.findOne({
+                where: { id: merchandiseTypeId },
+                relations: [
+                    'merchandises',
+                    'merchandises.batch',
+                    'stock'
+                ]
+            });
+
+            if (!merchandiseType) {
+                throw new SystemError("Tipo de mercadoria não encontrado");
+            }
+
+            return {
+                merchandiseType: {
+                    id: merchandiseType.id,
+                    name: merchandiseType.name,
+                    recordNumber: merchandiseType.recordNumber,
+                    unitOfMeasure: merchandiseType.unitOfMeasure,
+                    quantityTotal: merchandiseType.quantityTotal,
+                    controlled: merchandiseType.controlled,
+                    minimumStock: merchandiseType.minimumStock,
+                    group: merchandiseType.group,
+                    stock: {
+                        id: merchandiseType.stock.id,
+                        name: merchandiseType.stock.name
+                    }
+                },
+                merchandises: merchandiseType.merchandises.map(merchandise => ({
+                    id: merchandise.id,
+                    quantity: merchandise.quantity,
+                    status: merchandise.status,
+                    batch: {
+                        id: merchandise.batch.id,
+                        expirationDate: merchandise.batch.expirationDate
+                    }
+                }))
+            };
+        } catch (error) {
+            console.error("Erro ao buscar mercadorias com lotes", error);
+            throw error;
+        }
+    }
 }

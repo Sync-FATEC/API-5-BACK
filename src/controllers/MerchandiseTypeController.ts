@@ -252,4 +252,23 @@ export class MerchandiseTypeController {
       next(error);
     }
   }
+
+  async getMerchandisesWithBatches(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { id } = req.params;
+      
+      if (!id) {
+        throw new SystemError("ID do tipo de mercadoria é obrigatório");
+      }
+
+      const data = await merchandiseTypeService.getMerchandisesWithBatches(id);
+      res.status(200).json({
+        success: true,
+        data: data,
+        message: "Mercadorias e lotes encontrados com sucesso",
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
 }

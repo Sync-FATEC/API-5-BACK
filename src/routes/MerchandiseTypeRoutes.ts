@@ -9,6 +9,98 @@ const router = Router();
 
 router.get("/:id/logs", AuthMiddleware.requireRole(RoleEnum.SOLDADO), merchandiseTypeController.listLogs);
 
+/**
+ * @swagger
+ * /merchandise-types/{id}/merchandises:
+ *   get:
+ *     summary: Lista todas as mercadorias e lotes de um tipo específico
+ *     tags: [MerchandiseTypes]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *         description: ID do tipo de mercadoria
+ *     responses:
+ *       200:
+ *         description: Mercadorias e lotes encontrados com sucesso
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     merchandiseType:
+ *                       type: object
+ *                       properties:
+ *                         id:
+ *                           type: string
+ *                           format: uuid
+ *                         name:
+ *                           type: string
+ *                         recordNumber:
+ *                           type: string
+ *                         unitOfMeasure:
+ *                           type: string
+ *                         quantityTotal:
+ *                           type: number
+ *                         controlled:
+ *                           type: boolean
+ *                         minimumStock:
+ *                           type: number
+ *                         group:
+ *                           type: string
+ *                         stock:
+ *                           type: object
+ *                           properties:
+ *                             id:
+ *                               type: string
+ *                               format: uuid
+ *                             name:
+ *                               type: string
+ *                     merchandises:
+ *                       type: array
+ *                       items:
+ *                         type: object
+ *                         properties:
+ *                           id:
+ *                             type: string
+ *                             format: uuid
+ *                           quantity:
+ *                             type: number
+ *                           status:
+ *                             type: string
+ *                             enum: [AVAILABLE, RESERVED, OUT_OF_STOCK]
+ *                           batch:
+ *                             type: object
+ *                             properties:
+ *                               id:
+ *                                 type: string
+ *                                 format: uuid
+ *                               expirationDate:
+ *                                 type: string
+ *                                 format: date
+ *                 message:
+ *                   type: string
+ *                   example: "Mercadorias e lotes encontrados com sucesso"
+ *       400:
+ *         description: ID do tipo de mercadoria é obrigatório
+ *       404:
+ *         description: Tipo de mercadoria não encontrado
+ *       401:
+ *         description: Não autorizado
+ */
+router.get("/:id/merchandises", merchandiseTypeController.getMerchandisesWithBatches);
+
 
 
 /**

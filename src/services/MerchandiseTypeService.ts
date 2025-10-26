@@ -57,6 +57,15 @@ export class MerchandiseTypeService {
         }
     }
 
+    async getMerchandisesWithBatches(id: string) {
+        try {
+            return await merchandiseTypeRepository.getMerchandisesWithBatches(id);
+        } catch (error) {
+            console.error("Erro ao buscar mercadorias e lotes do tipo de mercadoria:", error);
+            throw error;
+        }
+    }
+
     async updateMerchandiseType(id: string, merchandiseTypeData: Partial<MerchandiseTypeType>, userId: string) {
         try {
             if (merchandiseTypeData.name) {
