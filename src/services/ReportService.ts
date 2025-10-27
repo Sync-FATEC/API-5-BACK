@@ -296,7 +296,7 @@ export class ReportService {
 
         return new Promise((resolve, reject) => {
             try {
-                const doc = new PDFDocument();
+                const doc = new PDFDocument({ margin: 50 });
                 const buffers: Buffer[] = [];
 
                 doc.on('data', buffers.push.bind(buffers));
@@ -304,6 +304,13 @@ export class ReportService {
                     const pdfBuffer = Buffer.concat(buffers);
                     resolve(pdfBuffer);
                 });
+
+                // Função auxiliar para verificar se precisa de nova página
+                const checkPageBreak = (spaceNeeded: number = 80) => {
+                    if (doc.y + spaceNeeded > 750) { // 750 é aproximadamente onde a página acaba
+                        doc.addPage();
+                    }
+                };
 
                 // Cabeçalho
                 doc.fontSize(20).text('RELATÓRIO DO DASHBOARD', { align: 'center' });
@@ -316,6 +323,7 @@ export class ReportService {
                 doc.moveDown();
 
                 // Métricas principais
+                checkPageBreak(120);
                 doc.fontSize(16).text('MÉTRICAS PRINCIPAIS');
                 doc.fontSize(12);
                 doc.text(`Total de Pedidos: ${summary.totalOrders}`);
@@ -325,6 +333,7 @@ export class ReportService {
                 doc.moveDown();
 
                 // Pedidos por status
+                checkPageBreak(60 + Object.keys(summary.ordersByStatus).length * 15);
                 doc.fontSize(16).text('PEDIDOS POR STATUS');
                 doc.fontSize(12);
                 Object.entries(summary.ordersByStatus).forEach(([status, count]) => {
@@ -333,6 +342,7 @@ export class ReportService {
                 doc.moveDown();
 
                 // Mercadorias por tipo
+                checkPageBreak(60 + Object.keys(summary.merchandiseByType).length * 15);
                 doc.fontSize(16).text('MERCADORIAS POR TIPO');
                 doc.fontSize(12);
                 Object.entries(summary.merchandiseByType).forEach(([type, count]) => {
@@ -341,6 +351,7 @@ export class ReportService {
                 doc.moveDown();
 
                 // Top mercadorias
+                checkPageBreak(60 + summary.topMerchandise.length * 15);
                 doc.fontSize(16).text('TOP MERCADORIAS MAIS UTILIZADAS');
                 doc.fontSize(12);
                 summary.topMerchandise.forEach((item, index) => {
@@ -349,11 +360,13 @@ export class ReportService {
 
                 // Pedidos recentes
                 if (params.includeOrders !== false && summary.recentOrders.length > 0) {
-                    doc.addPage();
+                    checkPageBreak(200);
                     doc.fontSize(16).text('PEDIDOS RECENTES');
                     doc.fontSize(10);
 
                     summary.recentOrders.forEach(order => {
+                        checkPageBreak(80); // Espaço para cada pedido
+                        
                         doc.text(`ID: ${order.id}`);
                         doc.text(`Data: ${new Date(order.creationDate).toLocaleDateString('pt-BR')}`);
                         doc.text(`Status: ${order.status}`);
@@ -807,6 +820,13 @@ export class ReportService {
           lightGray: '#EAEAEA',
         };
 
+        // Função auxiliar para verificar se precisa de nova página
+        const checkPageBreak = (spaceNeeded: number = 100) => {
+          if (doc.y + spaceNeeded > 750) { // 750 é aproximadamente onde a página acaba
+            doc.addPage();
+          }
+        };
+
         // ==================================================
         // 🔹 Cabeçalho
         // ==================================================
@@ -835,12 +855,9 @@ export class ReportService {
           .moveDown(2);
 
         // ==================================================
-        // 📊 RESUMO GERAL
-        // ==================================================
-
-        // ==================================================
         // 🧾 STATUS DE PRODUTOS
         // ==================================================
+        checkPageBreak(150);
         this.sectionTitle(doc, 'STATUS DE PRODUTOS', colors.primary);
         const status = dashboardData.productStatus;
         this.addMetric(doc, 'Total de Produtos', status.total, colors.primary);
@@ -848,16 +865,18 @@ export class ReportService {
         this.addMetric(doc, 'Estoque Baixo', status.lowStock, colors.orange);
         this.addMetric(doc, 'Crítico', status.critical, colors.red);
 
-        doc.moveDown(1.5);
+        doc.moveDown(2);
 
         // ==================================================
         // 🏬 PEDIDOS POR SEÇÃO
         // ==================================================
-        doc.addPage();
+        checkPageBreak(200);
         this.sectionTitle(doc, 'PEDIDOS POR SEÇÃO', colors.primary);
         doc.font('Helvetica').fontSize(12).fillColor(colors.gray);
 
         dashboardData.ordersBySection.forEach((item) => {
+          checkPageBreak(40); // Espaço necessário para cada item
+          
           const barWidth = Math.min(item.percentage * 4, 400);
           const y = doc.y;
 
@@ -869,12 +888,17 @@ export class ReportService {
           doc.moveDown(1);
         });
 
+        doc.moveDown(1);
+
         // ==================================================
         // 🥇 TOP PRODUTOS MAIS SOLICITADOS
         // ==================================================
-        doc.addPage();
+        checkPageBreak(200);
         this.sectionTitle(doc, 'TOP 10 PRODUTOS MAIS SOLICITADOS', colors.primary);
+        
         dashboardData.topProducts.slice(0, 10).forEach((item, index) => {
+          checkPageBreak(50); // Espaço necessário para cada produto
+          
           doc
             .font('Helvetica-Bold')
             .fontSize(12)
@@ -890,13 +914,17 @@ export class ReportService {
             .moveDown(0.5);
         });
 
+        doc.moveDown(1);
+
         // ==================================================
         // 🚨 ALERTAS DE ESTOQUE
         // ==================================================
-        doc.addPage();
+        checkPageBreak(150);
         this.sectionTitle(doc, 'ALERTAS DE ESTOQUE', colors.primary);
 
         dashboardData.stockAlerts.forEach((item) => {
+          checkPageBreak(60); // Espaço necessário para cada alerta
+          
           const isCritical = item.status === 'critical';
           const statusLabel = isCritical ? 'CRÍTICO' : 'BAIXO';
           const statusColor = isCritical ? colors.red : colors.orange;
