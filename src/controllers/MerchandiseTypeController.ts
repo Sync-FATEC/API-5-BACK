@@ -2,10 +2,12 @@ import { Request, Response, NextFunction } from "express";
 import { MerchandiseTypeType } from "../types/ProductTypeType";
 import { SystemError } from "../middlewares/SystemError";
 import { MerchandiseTypeService } from "../services/MerchandiseTypeService";
+import { MerchandiseService } from "../services/MerchandiseService";
 import { MerchandiseGroup } from "../database/enums/MerchandiseGroup";
 import { getToken } from "../utils/GetUserToken";
 
 const merchandiseTypeService = new MerchandiseTypeService();
+const merchandiseService = new MerchandiseService();
 
 export class MerchandiseTypeController {
   async create(req: Request, res: Response, next: NextFunction) {
@@ -266,6 +268,25 @@ export class MerchandiseTypeController {
         success: true,
         data: data,
         message: "Mercadorias e lotes encontrados com sucesso",
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  async getEntryHistory(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { id } = req.params;
+
+      if (!id) {
+        throw new SystemError("ID do tipo de mercadoria é obrigatório");
+      }
+
+      const history = await merchandiseService.getEntryHistory(id);
+      res.status(200).json({
+        success: true,
+        data: history,
+        message: "Histórico de entradas encontrado com sucesso",
       });
     } catch (error) {
       next(error);

@@ -11,6 +11,56 @@ router.get("/:id/logs", AuthMiddleware.requireRole(RoleEnum.SOLDADO), merchandis
 
 /**
  * @swagger
+ * /merchandise-types/{id}/entry-history:
+ *   get:
+ *     summary: Retorna o histórico de entradas de um tipo de mercadoria
+ *     tags: [MerchandiseTypes]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *         description: ID do tipo de mercadoria
+ *     responses:
+ *       200:
+ *         description: Histórico de entradas encontrado com sucesso
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 data:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       id:
+ *                         type: string
+ *                         format: uuid
+ *                       quantity:
+ *                         type: number
+ *                       entryDate:
+ *                         type: string
+ *                         format: date-time
+ *                       observation:
+ *                         type: string
+ *                         nullable: true
+ *       400:
+ *         description: ID do tipo de mercadoria não fornecido
+ *       404:
+ *         description: Tipo de mercadoria não encontrado
+ */
+router.get("/:id/entry-history", AuthMiddleware.requireRole(RoleEnum.SOLDADO), merchandiseTypeController.getEntryHistory);
+
+/**
+ * @swagger
  * /merchandise-types/{id}/merchandises:
  *   get:
  *     summary: Lista todas as mercadorias e lotes de um tipo específico

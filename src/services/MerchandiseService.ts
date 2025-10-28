@@ -1,20 +1,33 @@
 import { SystemError } from "../middlewares/SystemError";
 import { MerchandiseRepository } from "../repository/MerchandiseRepository";
 import { MerchandiseTypeRepository } from "../repository/MerchandiseTypeRepository";
+import { EntryHistoryRepository } from "../repository/EntryHistoryRepository";
 import { MerchandiseTypeEnum, MerchandiseCreateByRecordNumber, StockAlert, StockAlertSummary } from "../types/ProductType";
 import { RoleEnum } from "../database/enums/RoleEnum";
 
 const merchandiseRepository = new MerchandiseRepository();
 const merchandiseTypeRepository = new MerchandiseTypeRepository();
+const entryHistoryRepository = new EntryHistoryRepository();
 
 export class MerchandiseService {
     async createMerchandise(merchandise: MerchandiseTypeEnum, validDate: Date) {
         try {
-            await merchandiseTypeRepository.getById(merchandise.typeId);
+            const merchandiseType = await merchandiseTypeRepository.getById(merchandise.typeId);
             
             if (merchandise.quantity < 0) {
                 throw new SystemError("A quantidade não pode ser negativa");
             }
+
+            // Atualiza o total de entradas somando a nova quantidade
+            merchandiseType.entriesTotal += merchandise.quantity;
+            await merchandiseTypeRepository.update(merchandiseType.id, { entriesTotal: merchandiseType.entriesTotal });
+
+            // Registra a entrada no histórico
+            await entryHistoryRepository.create({
+                merchandiseTypeId: merchandiseType.id,
+                quantity: merchandise.quantity,
+                entryDate: validDate
+            });
 
             const savedMerchandise = await merchandiseRepository.create(merchandise, validDate);
             return savedMerchandise;
@@ -32,6 +45,17 @@ export class MerchandiseService {
             if (merchandiseData.quantity < 0) {
                 throw new SystemError("A quantidade não pode ser negativa");
             }
+
+            // Atualiza o total de entradas somando a nova quantidade
+            merchandiseType.entriesTotal += merchandiseData.quantity;
+            await merchandiseTypeRepository.update(merchandiseType.id, { entriesTotal: merchandiseType.entriesTotal });
+
+            // Registra a entrada no histórico
+            await entryHistoryRepository.create({
+                merchandiseTypeId: merchandiseType.id,
+                quantity: merchandiseData.quantity,
+                entryDate: validDate
+            });
 
             // Criar a mercadoria com o typeId encontrado
             const merchandise: MerchandiseTypeEnum = {
@@ -99,6 +123,19 @@ export class MerchandiseService {
             return { success: true, message: "Mercadoria removida com sucesso" };
         } catch (error) {
             console.error("Erro ao excluir mercadoria:", error);
+            throw error;
+        }
+    }
+
+    async getEntryHistory(merchandiseTypeId: string) {
+        try {
+            // Verificar se o tipo de mercadoria existe
+            await merchandiseTypeRepository.getById(merchandiseTypeId);
+            
+            // Buscar histórico de entradas
+            return await entryHistoryRepository.getByMerchandiseTypeId(merchandiseTypeId);
+        } catch (error) {
+            console.error("Erro ao buscar histórico de entradas:", error);
             throw error;
         }
     }

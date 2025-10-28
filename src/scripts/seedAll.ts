@@ -877,14 +877,14 @@ async function seedOrders(sections: Section[], stocks: Stock[], merchandiseTypes
     return statuses[2];
   };
 
-  // Gerar muitos pedidos com datas variadas (últimos 2 anos)
+  // Gerar 30 pedidos com datas variadas (últimos 2 anos)
   
   const startDate = new Date('2023-10-24');
   const endDate = new Date('2025-10-24');
   
   const ordersInput: Array<{ creationDate: Date; withdrawalDate: Date | null; status: string; section: Section; stock: Stock }> = [];
   
-  for (let i = 0; i < 150; i++) {
+  for (let i = 0; i < 20; i++) { // Reduzido para 20 pedidos aleatórios + 10 específicos = 30 total
     const creationDate = getRandomDate(startDate, endDate);
     const status = getRandomStatus();
     const section = sections[Math.floor(Math.random() * sections.length)];
@@ -1005,11 +1005,13 @@ async function seedOrders(sections: Section[], stocks: Stock[], merchandiseTypes
     let availableTypes = merchandiseTypes.filter(mt => (mt as any).stock?.id === orderData.stock.id || (mt as any).stockId === orderData.stock.id);
     if (availableTypes.length === 0) availableTypes = merchandiseTypes;
 
-    const numItems = Math.floor(Math.random() * 8) + 1;
+    const numItems = Math.floor(Math.random() * 7) + 2; // Mínimo 2 itens, máximo 8 itens
     const usedTypes = new Set<string>();
     const orderItemsDTO: { merchandiseId: string; quantity: number }[] = [];
 
-    for (let i = 0; i < numItems && usedTypes.size < availableTypes.length; i++) {
+    // Garante que pelo menos um item seja adicionado
+    let itemsAdded = 0;
+    while (itemsAdded < numItems && usedTypes.size < availableTypes.length) {
       let type: MerchandiseType;
       do {
         type = availableTypes[Math.floor(Math.random() * availableTypes.length)];
@@ -1017,12 +1019,13 @@ async function seedOrders(sections: Section[], stocks: Stock[], merchandiseTypes
       usedTypes.add(type.id);
 
       const desired = getRandomQuantityByType(type);
-      const maxQty = Math.max(0, type.quantityTotal);
+      const maxQty = Math.max(1, type.quantityTotal); // Garante pelo menos 1 item
       const qty = Math.min(desired, maxQty);
       if (qty > 0) {
         orderItemsDTO.push({ merchandiseId: type.id, quantity: qty });
         // Atualizar cache local para evitar pedir acima do disponível no mesmo pedido
         type.quantityTotal -= qty;
+        itemsAdded++;
       }
     }
 
