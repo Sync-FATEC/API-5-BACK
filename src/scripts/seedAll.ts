@@ -35,6 +35,55 @@ const firebaseConfig = {
 const firebaseApp = initializeApp(firebaseConfig);
 const firebaseAuth = getAuth(firebaseApp);
 
+async function dropDatabase() {
+  console.log("🗑️ Iniciando limpeza do banco de dados...");
+  
+  try {
+    // Obter todas as entidades registradas
+    const entities = AppDataSource.entityMetadatas;
+    
+    // Desabilitar verificações de chave estrangeira temporariamente
+    await AppDataSource.query('SET foreign_key_checks = 0;').catch(() => {
+      // Para PostgreSQL, usar CASCADE
+      console.log("Usando PostgreSQL - foreign key checks não aplicável");
+    });
+
+    // Para PostgreSQL, usar CASCADE para dropar tabelas
+    for (const entity of entities) {
+      const tableName = entity.tableName;
+      try {
+        await AppDataSource.query(`DROP TABLE IF EXISTS "${tableName}" CASCADE;`);
+        console.log(`✅ Tabela ${tableName} removida`);
+      } catch (error) {
+        console.warn(`⚠️ Erro ao remover tabela ${tableName}:`, error);
+      }
+    }
+
+    // Reabilitar verificações de chave estrangeira
+    await AppDataSource.query('SET foreign_key_checks = 1;').catch(() => {
+      console.log("PostgreSQL - foreign key checks reabilitadas automaticamente");
+    });
+
+    console.log("✅ Limpeza do banco de dados concluída");
+  } catch (error) {
+    console.error("❌ Erro durante a limpeza do banco de dados:", error);
+    throw error;
+  }
+}
+
+async function recreateDatabase() {
+  console.log("🔄 Recriando estrutura do banco de dados...");
+  
+  try {
+    // Sincronizar o schema (criar tabelas)
+    await AppDataSource.synchronize(true); // true força a recriação
+    console.log("✅ Estrutura do banco de dados recriada com sucesso");
+  } catch (error) {
+    console.error("❌ Erro ao recriar estrutura do banco de dados:", error);
+    throw error;
+  }
+}
+
 async function createFirebaseUser(email: string, password: string): Promise<string> {
   try {
     console.log(`Criando usuário no Firebase: ${email}...`);
@@ -1269,6 +1318,17 @@ async function seedAll() {
     // Inicializar conexão com o banco de dados
     await AppDataSource.initialize();
     console.log("Conexão com o banco de dados estabelecida.");
+
+    // Dropar e recriar o banco de dados
+    console.log("🔄 Iniciando processo de recriação do banco de dados...");
+    try {
+      await dropDatabase();
+      await recreateDatabase();
+      console.log("✅ Banco de dados recriado com sucesso!\n");
+    } catch (dbError) {
+      console.error("❌ Erro crítico durante a recriação do banco de dados:", dbError);
+      throw new Error(`Falha na recriação do banco de dados: ${dbError}`);
+    }
 
     console.log("🌱 Iniciando seed completo do sistema...\n");
 
