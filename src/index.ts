@@ -9,6 +9,7 @@ import { authMiddleware } from "./middlewares/authContext";
 import { systemErrorHandler } from "./middlewares/SystemError";
 import { initializeApp } from "firebase/app";
 import { getAuth } from "firebase/auth";
+import { OrderScheduler } from "./schedulers/OrderScheduler";
 
 import authRouter from "./routes/authRoutes";
 import stockRouter from "./routes/StockRoutes";
@@ -16,6 +17,8 @@ import merchandiseRouter from "./routes/MerchandiseRoutes";
 import merchandiseTypeRouter from "./routes/MerchandiseTypeRoutes";
 import sectionRouter from "./routes/SectionRoutes";
 import orderRouter from "./routes/OrderRoutes";
+import supplierRouter from "./routes/SupplierRoutes";
+import reportRouter from "./routes/ReportRoutes";
 
 const firebaseConfig = {
   apiKey: process.env.FIREBASE_API_KEY,
@@ -66,10 +69,18 @@ app.use("/orders", orderRouter);
 app.use("/merchandise", merchandiseRouter);
 app.use("/merchandise-types", merchandiseTypeRouter);
 app.use("/stocks", stockRouter);
+app.use("/suppliers", supplierRouter);
+app.use("/reports", reportRouter);
 app.use(systemErrorHandler);
 
 AppDataSource.initialize()
   .then(() => {
-    app.listen(3000, () => console.log("API on http://localhost:3000 \n Swagger on http://localhost:3000/api-docs "));
+    app.listen(3000, () => {
+      console.log("API on http://localhost:3000 \n Swagger on http://localhost:3000/api-docs ");
+      
+      // Iniciar o scheduler para verificar pedidos vencidos a cada 15 minutos
+      const orderScheduler = new OrderScheduler();
+      orderScheduler.startScheduler(15);
+    });
   })
   .catch((err) => console.error("Data Source init error:", err));

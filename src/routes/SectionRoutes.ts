@@ -20,6 +20,7 @@ const sectionController = new SectionController();
  *               items:
  *                 $ref: '#/components/schemas/Section'
  */
+router.get('/:id', (req, res) => sectionController.getAll(req, res));
 router.get('/', (req, res) => sectionController.getAll(req, res));
 
 /**
@@ -140,6 +141,66 @@ router.delete('/:id', (req, res) => sectionController.delete(req, res));
 
 /**
  * @swagger
+ * /sections/{id}/consumption-average:
+ *   get:
+ *     summary: Obtém a média de consumo dos produtos de uma seção em um período específico
+ *     tags: [Sections]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *         description: ID da seção
+ *       - in: query
+ *         name: startDate
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: date
+ *         description: Data inicial do período (formato YYYY-MM-DD)
+ *       - in: query
+ *         name: endDate
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: date
+ *         description: Data final do período (formato YYYY-MM-DD)
+ *     responses:
+ *       200:
+ *         description: Dados de consumo médio obtidos com sucesso
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 type: object
+ *                 properties:
+ *                   merchandiseTypeId:
+ *                     type: string
+ *                     format: uuid
+ *                     description: ID do tipo de mercadoria
+ *                   merchandiseTypeName:
+ *                     type: string
+ *                     description: Nome do tipo de mercadoria
+ *                   totalQuantity:
+ *                     type: number
+ *                     description: Quantidade total consumida no período
+ *                   averagePerDay:
+ *                     type: number
+ *                     description: Média de consumo diário
+ *       400:
+ *         description: Parâmetros de data inválidos ou ausentes
+ *       404:
+ *         description: Seção não encontrada
+ *       500:
+ *         description: Erro ao calcular médias de consumo
+ */
+router.get('/:id/consumption-average', (req, res) => sectionController.getConsumptionAverage(req, res));
+
+/**
+ * @swagger
  * components:
  *   schemas:
  *     Section:
@@ -151,5 +212,21 @@ router.delete('/:id', (req, res) => sectionController.delete(req, res));
  *         name:
  *           type: string
  *           example: "Almoxarifado"
+ *     ConsumptionAverage:
+ *       type: object
+ *       properties:
+ *         merchandiseTypeId:
+ *           type: string
+ *           format: uuid
+ *           description: ID do tipo de mercadoria
+ *         merchandiseTypeName:
+ *           type: string
+ *           description: Nome do tipo de mercadoria
+ *         totalQuantity:
+ *           type: number
+ *           description: Quantidade total consumida no período
+ *         averagePerDay:
+ *           type: number
+ *           description: Média de consumo diário
  */
 export default router;

@@ -6,6 +6,153 @@ import { RoleEnum } from "../database/enums/RoleEnum";
 const merchandiseTypeController = new MerchandiseTypeController();
 const router = Router();
 
+
+router.get("/:id/logs", AuthMiddleware.requireRole(RoleEnum.SOLDADO), merchandiseTypeController.listLogs);
+
+/**
+ * @swagger
+ * /merchandise-types/{id}/entry-history:
+ *   get:
+ *     summary: Retorna o histórico de entradas de um tipo de mercadoria
+ *     tags: [MerchandiseTypes]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *         description: ID do tipo de mercadoria
+ *     responses:
+ *       200:
+ *         description: Histórico de entradas encontrado com sucesso
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 data:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       id:
+ *                         type: string
+ *                         format: uuid
+ *                       quantity:
+ *                         type: number
+ *                       entryDate:
+ *                         type: string
+ *                         format: date-time
+ *                       observation:
+ *                         type: string
+ *                         nullable: true
+ *       400:
+ *         description: ID do tipo de mercadoria não fornecido
+ *       404:
+ *         description: Tipo de mercadoria não encontrado
+ */
+router.get("/:id/entry-history", AuthMiddleware.requireRole(RoleEnum.SOLDADO), merchandiseTypeController.getEntryHistory);
+
+/**
+ * @swagger
+ * /merchandise-types/{id}/merchandises:
+ *   get:
+ *     summary: Lista todas as mercadorias e lotes de um tipo específico
+ *     tags: [MerchandiseTypes]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *         description: ID do tipo de mercadoria
+ *     responses:
+ *       200:
+ *         description: Mercadorias e lotes encontrados com sucesso
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     merchandiseType:
+ *                       type: object
+ *                       properties:
+ *                         id:
+ *                           type: string
+ *                           format: uuid
+ *                         name:
+ *                           type: string
+ *                         recordNumber:
+ *                           type: string
+ *                         unitOfMeasure:
+ *                           type: string
+ *                         quantityTotal:
+ *                           type: number
+ *                         controlled:
+ *                           type: boolean
+ *                         minimumStock:
+ *                           type: number
+ *                         group:
+ *                           type: string
+ *                         stock:
+ *                           type: object
+ *                           properties:
+ *                             id:
+ *                               type: string
+ *                               format: uuid
+ *                             name:
+ *                               type: string
+ *                     merchandises:
+ *                       type: array
+ *                       items:
+ *                         type: object
+ *                         properties:
+ *                           id:
+ *                             type: string
+ *                             format: uuid
+ *                           quantity:
+ *                             type: number
+ *                           status:
+ *                             type: string
+ *                             enum: [AVAILABLE, RESERVED, OUT_OF_STOCK]
+ *                           batch:
+ *                             type: object
+ *                             properties:
+ *                               id:
+ *                                 type: string
+ *                                 format: uuid
+ *                               expirationDate:
+ *                                 type: string
+ *                                 format: date
+ *                 message:
+ *                   type: string
+ *                   example: "Mercadorias e lotes encontrados com sucesso"
+ *       400:
+ *         description: ID do tipo de mercadoria é obrigatório
+ *       404:
+ *         description: Tipo de mercadoria não encontrado
+ *       401:
+ *         description: Não autorizado
+ */
+router.get("/:id/merchandises", merchandiseTypeController.getMerchandisesWithBatches);
+
+
+
 /**
  * @swagger
  * /merchandise-types/{id}/quantity-total:
@@ -74,9 +221,9 @@ router.patch('/:id/quantity-total', AuthMiddleware.requireRole(RoleEnum.ADMIN), 
  *           type: boolean
  *           example: true
  *         group:
- *           type: string
- *           enum: [Medical, Almox]
- *           example: Medical
+           type: string
+           enum: [expediente, limpeza, "Almox Virtual", permanente]
+           example: expediente
  *         minimumStock:
  *           type: number
  *           example: 100
@@ -194,8 +341,8 @@ router.get("/details/:id", merchandiseTypeController.getById);
                  example: true
                group:
                  type: string
-                 enum: [MATERIAL_ESCRITORIO, LIMPEZA, MANUTENCAO, OUTROS]
-                 example: "MATERIAL_ESCRITORIO"
+                 enum: [expediente, limpeza, "Almox Virtual", permanente]
+                 example: "expediente"
                minimumStock:
                  type: number
                  example: 10

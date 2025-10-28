@@ -10,16 +10,16 @@ import { OrderItem } from "./entities/OrderItem";
 import { Stock } from "./entities/Stock";
 import { UserStock } from "./entities/UserStock";
 import { Section } from "./entities/Section";
+import { LogMerchandiseType } from "./entities/LogMerchandiseType";
+import { Supplier } from "./entities/Supplier";
+import { EntryHistory } from "./entities/EntryHistory";
 config();
 
 export const AppDataSource = new DataSource({
   type: "postgres",
-  host: process.env.DB_HOST,
-  port: 5432,
-  username: process.env.DB_USER,
-  password: process.env.DB_PASS,
-  database: process.env.DB_NAME,
+  url: process.env.DB_URL,
   synchronize: true,
+  ssl: { rejectUnauthorized: false },
   logging: false,
-  entities: [User, Batch, Merchandise, MerchandiseType, Order, OrderItem, Stock, UserStock, Section],
+  entities: [User, Batch, Merchandise, MerchandiseType, Order, OrderItem, Stock, UserStock, Section, LogMerchandiseType, Supplier, EntryHistory],
 });

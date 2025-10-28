@@ -69,7 +69,7 @@ export class UserServices {
         throw new SystemError("Email não encontrado");
       }
       
-      if (error.code === 'auth/wrong-password') {
+      if (error.code === 'auth/invalid-credential') {
         throw new SystemError("Senha incorreta");
       }
       
@@ -138,7 +138,12 @@ export class UserServices {
         role: user.role,
         validUntil: user.validUntil,
         createdAt: user.createdAt,
-        isActive: user.isActive
+        isActive: user.isActive,
+        stocks: user.userStocks.map(userStock => ({
+          stockId: userStock.stockId,
+          stockName: userStock.stock.name,
+          responsibility: userStock.responsibility
+        }))
       }));
     } catch (error) {
       console.error("Erro ao buscar todos os usuários:", error);
@@ -200,6 +205,24 @@ export class UserServices {
       return stocks;
     } catch (error) {
       console.error("Erro ao buscar estoques do usuário:", error);
+      throw error;
+    }
+  }
+
+  async changePassword(email: string, currentPassword: string, newPassword: string) {
+    try {
+      // Validar se a nova senha atende aos critérios mínimos
+      if (!newPassword || newPassword.length < 6) {
+        throw new SystemError("A nova senha deve ter pelo menos 6 caracteres");
+      }
+
+      if (currentPassword === newPassword) {
+        throw new SystemError("A nova senha deve ser diferente da senha atual");
+      }
+
+      // Chamar o método do repository para alterar a senha
+      return await usersRepository.changePassword(email, currentPassword, newPassword);
+    } catch (error) {
       throw error;
     }
   }

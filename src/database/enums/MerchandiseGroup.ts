@@ -1,4 +1,6 @@
 export enum MerchandiseGroup {
-    Medical = 'Medical',
-    Almox = 'Almox',
+    EXPEDIENTE = 'expediente',
+    LIMPEZA = 'limpeza',
+    ALMOX_VIRTUAL = 'Almox Virtual',
+    PERMANENTE = 'permanente',
 }

@@ -244,7 +244,7 @@ router.delete("/users/:id", userController.deleteUser);
  *                 type: string
  *               responsibility:
  *                 type: string
- *                 enum: [USER, MANAGER, ADMIN]
+ *                 enum: [SOLDADO, SUPERVISOR, ADMIN]
  *     responses:
  *       200:
  *         description: Usuário vinculado ao estoque com sucesso
@@ -280,7 +280,7 @@ router.delete("/users/:userId/stocks/:stockId", userController.unlinkUserFromSto
  * @swagger
  * /auth/users/{userId}/stocks:
  *   get:
- *     summary: Busca estoques vinculados ao usuário
+ *     summary: Busca estoques vinculados a um usuário
  *     tags: [Auth]
  *     parameters:
  *       - in: path
@@ -291,9 +291,78 @@ router.delete("/users/:userId/stocks/:stockId", userController.unlinkUserFromSto
  *         description: ID do usuário
  *     responses:
  *       200:
- *         description: Estoques do usuário obtidos com sucesso
+ *         description: Estoques do usuário encontrados
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 data:
+ *                   type: array
+ *                   items:
+ *                     $ref: '#/components/schemas/Stock'
+ *                 message:
+ *                   type: string
+ *       404:
+ *         description: Usuário não encontrado
  */
 router.get("/users/:userId/stocks", userController.getUserStocks);
+
+/**
+ * @swagger
+ * /auth/change-password:
+ *   put:
+ *     summary: Altera a senha do usuário
+ *     tags: [Auth]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - email
+ *               - currentPassword
+ *               - newPassword
+ *             properties:
+ *               email:
+ *                 type: string
+ *                 format: email
+ *                 description: Email do usuário
+ *               currentPassword:
+ *                 type: string
+ *                 description: Senha atual do usuário
+ *               newPassword:
+ *                 type: string
+ *                 minLength: 6
+ *                 description: Nova senha do usuário (mínimo 6 caracteres)
+ *     responses:
+ *       200:
+ *         description: Senha alterada com sucesso
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     success:
+ *                       type: boolean
+ *                     message:
+ *                       type: string
+ *                 message:
+ *                   type: string
+ *       400:
+ *         description: Dados inválidos ou senha atual incorreta
+ *       404:
+ *         description: Usuário não encontrado
+ */
+router.put("/change-password", userController.changePassword);
 
 /**
  * @swagger
