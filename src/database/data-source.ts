@@ -12,6 +12,7 @@ import { UserStock } from "./entities/UserStock";
 import { Section } from "./entities/Section";
 import { LogMerchandiseType } from "./entities/LogMerchandiseType";
 import { Supplier } from "./entities/Supplier";
+import { EntryHistory } from "./entities/EntryHistory";
 config();
 
 export const AppDataSource = new DataSource({
@@ -20,5 +21,5 @@ export const AppDataSource = new DataSource({
   synchronize: true,
   ssl: { rejectUnauthorized: false },
   logging: false,
-  entities: [User, Batch, Merchandise, MerchandiseType, Order, OrderItem, Stock, UserStock, Section, LogMerchandiseType, Supplier],
+  entities: [User, Batch, Merchandise, MerchandiseType, Order, OrderItem, Stock, UserStock, Section, LogMerchandiseType, Supplier, EntryHistory],
 });

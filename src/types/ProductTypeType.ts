@@ -10,4 +10,5 @@ export type MerchandiseTypeType = {
     minimumStock: number;
     stockId: string;
     quantityTotal?: number;
+    entriesTotal?: number;
 }

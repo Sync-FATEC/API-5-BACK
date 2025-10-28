@@ -35,6 +35,55 @@ const firebaseConfig = {
 const firebaseApp = initializeApp(firebaseConfig);
 const firebaseAuth = getAuth(firebaseApp);
 
+async function dropDatabase() {
+  console.log("🗑️ Iniciando limpeza do banco de dados...");
+  
+  try {
+    // Obter todas as entidades registradas
+    const entities = AppDataSource.entityMetadatas;
+    
+    // Desabilitar verificações de chave estrangeira temporariamente
+    await AppDataSource.query('SET foreign_key_checks = 0;').catch(() => {
+      // Para PostgreSQL, usar CASCADE
+      console.log("Usando PostgreSQL - foreign key checks não aplicável");
+    });
+
+    // Para PostgreSQL, usar CASCADE para dropar tabelas
+    for (const entity of entities) {
+      const tableName = entity.tableName;
+      try {
+        await AppDataSource.query(`DROP TABLE IF EXISTS "${tableName}" CASCADE;`);
+        console.log(`✅ Tabela ${tableName} removida`);
+      } catch (error) {
+        console.warn(`⚠️ Erro ao remover tabela ${tableName}:`, error);
+      }
+    }
+
+    // Reabilitar verificações de chave estrangeira
+    await AppDataSource.query('SET foreign_key_checks = 1;').catch(() => {
+      console.log("PostgreSQL - foreign key checks reabilitadas automaticamente");
+    });
+
+    console.log("✅ Limpeza do banco de dados concluída");
+  } catch (error) {
+    console.error("❌ Erro durante a limpeza do banco de dados:", error);
+    throw error;
+  }
+}
+
+async function recreateDatabase() {
+  console.log("🔄 Recriando estrutura do banco de dados...");
+  
+  try {
+    // Sincronizar o schema (criar tabelas)
+    await AppDataSource.synchronize(true); // true força a recriação
+    console.log("✅ Estrutura do banco de dados recriada com sucesso");
+  } catch (error) {
+    console.error("❌ Erro ao recriar estrutura do banco de dados:", error);
+    throw error;
+  }
+}
+
 async function createFirebaseUser(email: string, password: string): Promise<string> {
   try {
     console.log(`Criando usuário no Firebase: ${email}...`);
@@ -877,14 +926,14 @@ async function seedOrders(sections: Section[], stocks: Stock[], merchandiseTypes
     return statuses[2];
   };
 
-  // Gerar muitos pedidos com datas variadas (últimos 2 anos)
+  // Gerar 30 pedidos com datas variadas (últimos 2 anos)
   
   const startDate = new Date('2023-10-24');
   const endDate = new Date('2025-10-24');
   
   const ordersInput: Array<{ creationDate: Date; withdrawalDate: Date | null; status: string; section: Section; stock: Stock }> = [];
   
-  for (let i = 0; i < 150; i++) {
+  for (let i = 0; i < 20; i++) { // Reduzido para 20 pedidos aleatórios + 10 específicos = 30 total
     const creationDate = getRandomDate(startDate, endDate);
     const status = getRandomStatus();
     const section = sections[Math.floor(Math.random() * sections.length)];
@@ -1005,11 +1054,13 @@ async function seedOrders(sections: Section[], stocks: Stock[], merchandiseTypes
     let availableTypes = merchandiseTypes.filter(mt => (mt as any).stock?.id === orderData.stock.id || (mt as any).stockId === orderData.stock.id);
     if (availableTypes.length === 0) availableTypes = merchandiseTypes;
 
-    const numItems = Math.floor(Math.random() * 8) + 1;
+    const numItems = Math.floor(Math.random() * 7) + 2; // Mínimo 2 itens, máximo 8 itens
     const usedTypes = new Set<string>();
     const orderItemsDTO: { merchandiseId: string; quantity: number }[] = [];
 
-    for (let i = 0; i < numItems && usedTypes.size < availableTypes.length; i++) {
+    // Garante que pelo menos um item seja adicionado
+    let itemsAdded = 0;
+    while (itemsAdded < numItems && usedTypes.size < availableTypes.length) {
       let type: MerchandiseType;
       do {
         type = availableTypes[Math.floor(Math.random() * availableTypes.length)];
@@ -1017,12 +1068,13 @@ async function seedOrders(sections: Section[], stocks: Stock[], merchandiseTypes
       usedTypes.add(type.id);
 
       const desired = getRandomQuantityByType(type);
-      const maxQty = Math.max(0, type.quantityTotal);
+      const maxQty = Math.max(1, type.quantityTotal); // Garante pelo menos 1 item
       const qty = Math.min(desired, maxQty);
       if (qty > 0) {
         orderItemsDTO.push({ merchandiseId: type.id, quantity: qty });
         // Atualizar cache local para evitar pedir acima do disponível no mesmo pedido
         type.quantityTotal -= qty;
+        itemsAdded++;
       }
     }
 
@@ -1266,6 +1318,17 @@ async function seedAll() {
     // Inicializar conexão com o banco de dados
     await AppDataSource.initialize();
     console.log("Conexão com o banco de dados estabelecida.");
+
+    // Dropar e recriar o banco de dados
+    console.log("🔄 Iniciando processo de recriação do banco de dados...");
+    try {
+      await dropDatabase();
+      await recreateDatabase();
+      console.log("✅ Banco de dados recriado com sucesso!\n");
+    } catch (dbError) {
+      console.error("❌ Erro crítico durante a recriação do banco de dados:", dbError);
+      throw new Error(`Falha na recriação do banco de dados: ${dbError}`);
+    }
 
     console.log("🌱 Iniciando seed completo do sistema...\n");
 

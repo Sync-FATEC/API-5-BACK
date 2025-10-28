@@ -3,6 +3,7 @@ import { Merchandise } from './Merchandise';
 import { OrderItem } from './OrderItem';
 import { Stock } from './Stock';
 import { LogMerchandiseType } from './LogMerchandiseType';
+import { EntryHistory } from './EntryHistory';
 import { MerchandiseTypeType } from '../../types/ProductTypeType';
 import { User } from './User';
 import { MerchandiseGroup } from '../enums/MerchandiseGroup';
@@ -23,6 +24,9 @@ export class MerchandiseType {
 
     @Column({ default: 0 })
     quantityTotal!: number;
+
+    @Column({ default: 0 })
+    entriesTotal!: number;
 
     @Column()
     controlled!: boolean;
@@ -47,6 +51,9 @@ export class MerchandiseType {
 
     @OneToMany(() => LogMerchandiseType, log => log.merchandiseType)
     logs!: LogMerchandiseType[];
+
+    @OneToMany(() => EntryHistory, entryHistory => entryHistory.merchandiseType)
+    entries!: EntryHistory[];
 
     generateLogs(changes: Partial<MerchandiseTypeType>, user: User): LogMerchandiseType[] {
         const logs: LogMerchandiseType[] = [];
