@@ -5,7 +5,7 @@ import { UsersType } from "../types/UsersType";
 import { RoleEnum } from "../database/enums/RoleEnum";
 import { StockResponsibility } from "../database/enums/StockResponsability";
 import { sendPasswordResetEmail, createUserWithEmailAndPassword, signInWithEmailAndPassword } from "firebase/auth";
-import { firebaseAuth, adminFirebase } from "../index";
+import { firebaseAuth, adminFirebase } from "../config/firebase";
 
 const repository = AppDataSource.getRepository(User)
 
@@ -51,7 +51,28 @@ export class UsersRepository {
             await this.forgotPassword(user.email as string)
             
             return userDB
-        } catch (error) {
+        } catch (error: any) {
+            // Se o email já estiver em uso no Firebase, recuperar UID via Admin SDK e criar apenas no banco
+            if (error?.code === 'auth/email-already-in-use') {
+                try {
+                    const existing = await adminFirebase.auth().getUserByEmail(user.email as string);
+
+                    const userDB = await this.create({
+                        email: user.email as string,
+                        name: user.name as string,
+                        firebaseUid: existing.uid,
+                        role: user.role as RoleEnum,
+                    })
+
+                    await this.forgotPassword(user.email as string)
+
+                    return userDB
+                } catch (adminErr) {
+                    console.error("Erro ao recuperar usuário existente no Firebase", adminErr)
+                    throw adminErr
+                }
+            }
+
             console.error("Erro ao criar o usuario", error)
             throw error
         }

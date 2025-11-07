@@ -1,4 +1,4 @@
-import { adminFirebase, firebaseAuth } from "..";
+import { adminFirebase, firebaseAuth } from "../config/firebase";
 import { SystemError } from "../middlewares/SystemError";
 import { UsersRepository } from "../repository/UsersRepository";
 import { UsersType } from "../types/UsersType";
@@ -88,10 +88,21 @@ export class UserServices {
   async createUser(user: UsersType) {
     try {
       await usersRepository.isValidUser(user);
-      await usersRepository.createFireBaseUser(user);
+      if (user.firebaseUid) {
+        await usersRepository.create({
+          email: user.email as string,
+          name: user.name as string,
+          firebaseUid: user.firebaseUid,
+          role: user.role as any,
+        });
+        await usersRepository.forgotPassword(user.email as string);
+      } else {
+        await usersRepository.createFireBaseUser(user);
+      }
       return "Usuario cadastrado com sucesso";
     } catch (error) {
-      await adminFirebase.auth().deleteUser(user.firebaseUid);
+      // Não deletar usuário do Firebase quando erro for de email já existente
+      // ou quando o usuário já existe — apenas propagar o erro
       throw error;
     }
   }
