@@ -12,6 +12,8 @@ import { UserStock } from "./entities/UserStock";
 import { Section } from "./entities/Section";
 import { LogMerchandiseType } from "./entities/LogMerchandiseType";
 import { Supplier } from "./entities/Supplier";
+import { ExamType } from "./entities/ExamType";
+import { Appointment } from "./entities/Appointment";
 import { EntryHistory } from "./entities/EntryHistory";
 config();
 
@@ -24,5 +26,5 @@ export const AppDataSource = new DataSource({
   database: process.env.DB_NAME,
   synchronize: true,
   logging: false,
-  entities: [User, Batch, Merchandise, MerchandiseType, Order, OrderItem, Stock, UserStock, Section, LogMerchandiseType, Supplier, EntryHistory],
+  entities: [User, Batch, Merchandise, MerchandiseType, Order, OrderItem, Stock, UserStock, Section, LogMerchandiseType, Supplier, EntryHistory, ExamType, Appointment],
 });

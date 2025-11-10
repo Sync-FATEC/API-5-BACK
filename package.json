@@ -30,6 +30,7 @@
     "express": "^5.1.0",
     "firebase": "^12.1.0",
     "firebase-admin": "^13.4.0",
+    "nodemailer": "^7.0.10",
     "pdfkit": "^0.17.2",
     "pg": "^8.16.3",
     "qrcode": "^1.5.4",
@@ -38,6 +39,7 @@
     "swagger-jsdoc": "^6.2.8",
     "swagger-ui-express": "^5.0.1",
     "ts-node-dev": "^2.0.0",
+    "twilio": "^5.10.4",
     "typeorm": "^0.3.25"
   }
 }
