@@ -17,6 +17,7 @@ import supplierRouter from "./routes/SupplierRoutes";
 import reportRouter from "./routes/ReportRoutes";
 import examTypeRouter from "./routes/ExamTypeRoutes";
 import appointmentRouter from "./routes/AppointmentRoutes";
+import commitmentNoteRouter from "./routes/CommitmentNoteRoutes";
 
 const swaggerOptions = {
   definition: {
@@ -54,6 +55,7 @@ app.use("/merchandise", merchandiseRouter);
 app.use("/merchandise-types", merchandiseTypeRouter);
 app.use("/stocks", stockRouter);
 app.use("/suppliers", supplierRouter);
+app.use("/commitment-notes", commitmentNoteRouter);
 app.use("/reports", reportRouter);
 app.use("/exam-types", examTypeRouter);
 app.use("/appointments", appointmentRouter);
