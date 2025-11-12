@@ -137,7 +137,7 @@ export class MerchandiseTypeService {
 
             var merchandiseType = await merchandiseTypeRepository.getById(id);
 
-            var user = await userRepository.getById(userId);
+            var user = await userRepository.getUserByFirebaseId(userId);
             if (!user) {
                 throw new SystemError("Usuário não encontrado");
             }
@@ -149,6 +149,7 @@ export class MerchandiseTypeService {
             const log = merchandiseType.changeTotalQuantity(quantityTotal, "Atualização de quantidade total", user);
 
             logMerchandiseTypeRepository.create([log]);
+            return await merchandiseTypeRepository.update(id, { quantityTotal });
 
         } catch (error) {
             console.error("Erro ao atualizar quantidade total:", error);
