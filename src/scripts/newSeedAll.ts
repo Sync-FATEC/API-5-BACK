@@ -24,16 +24,24 @@ import { SectionService } from "../services/SectionService";
 import { MerchandiseTypeService } from "../services/MerchandiseTypeService";
 import { MerchandiseService } from "../services/MerchandiseService";
 import { OrderService } from "../services/OrderService";
+import { ExamTypeService } from "../services/ExamTypeService";
+import { AppointmentService } from "../services/AppointmentService";
 
 // Types
 import { UsersType } from "../types/UsersType";
 import { SupplierCreateType } from "../types/SupplierType";
 import { MerchandiseTypeType } from "../types/ProductTypeType";
-import { MerchandiseTypeEnum, MerchandiseCreateByRecordNumber } from "../types/ProductType";
+import {
+  MerchandiseTypeEnum,
+  MerchandiseCreateByRecordNumber,
+} from "../types/ProductType";
 import { OrderDTO, OrderItemDTO } from "../types/OrderSectionDTO";
 
 // Firebase
-import { createUserWithEmailAndPassword, signInWithEmailAndPassword } from "firebase/auth";
+import {
+  createUserWithEmailAndPassword,
+  signInWithEmailAndPassword,
+} from "firebase/auth";
 import { firebaseAuth } from "../config/firebase";
 
 // Instanciar services
@@ -44,10 +52,12 @@ const sectionService = new SectionService();
 const merchandiseTypeService = new MerchandiseTypeService();
 const merchandiseService = new MerchandiseService();
 const orderService = new OrderService();
+const examTypeService = new ExamTypeService();
+const appointmentService = new AppointmentService();
 
 // Helpers para CNPJ na execução de seeds (mantém serviços intactos)
 function normalizeCnpjStr(cnpj: string): string {
-  return (cnpj || '').replace(/\D/g, '');
+  return (cnpj || "").replace(/\D/g, "");
 }
 
 function calcDigit(numbers: number[], weights: number[]): number {
@@ -61,25 +71,45 @@ function calcDigit(numbers: number[], weights: number[]): number {
 
 function fixCnpj(cnpj: string): string {
   const n = normalizeCnpjStr(cnpj);
-  const base12 = n.slice(0, 12).split('').map(Number);
+  const base12 = n.slice(0, 12).split("").map(Number);
   if (base12.length !== 12) return n; // caso não tenha 12 dígitos base, retorna como está
-  const d1 = calcDigit(base12, [5,4,3,2,9,8,7,6,5,4,3,2]);
-  const d2 = calcDigit([...base12, d1], [6,5,4,3,2,9,8,7,6,5,4,3,2]);
-  return base12.join('') + String(d1) + String(d2);
+  const d1 = calcDigit(base12, [5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2]);
+  const d2 = calcDigit(
+    [...base12, d1],
+    [6, 5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2]
+  );
+  return base12.join("") + String(d1) + String(d2);
 }
 
-async function createFirebaseUser(email: string, password: string): Promise<string> {
+async function createFirebaseUser(
+  email: string,
+  password: string
+): Promise<string> {
   try {
     console.log(`Criando usuário no Firebase: ${email}...`);
-    const userFirebase = await createUserWithEmailAndPassword(firebaseAuth, email, password);
-    console.log(`Usuário criado no Firebase com sucesso. UID: ${userFirebase.user.uid}`);
+    const userFirebase = await createUserWithEmailAndPassword(
+      firebaseAuth,
+      email,
+      password
+    );
+    console.log(
+      `Usuário criado no Firebase com sucesso. UID: ${userFirebase.user.uid}`
+    );
     return userFirebase.user.uid;
   } catch (firebaseError: any) {
-    if (firebaseError.code === 'auth/email-already-in-use') {
-      console.log(`Usuário já existe no Firebase: ${email}. Fazendo login para obter UID...`);
+    if (firebaseError.code === "auth/email-already-in-use") {
+      console.log(
+        `Usuário já existe no Firebase: ${email}. Fazendo login para obter UID...`
+      );
       try {
-        const userCredential = await signInWithEmailAndPassword(firebaseAuth, email, password);
-        console.log(`Login realizado com sucesso. UID obtido: ${userCredential.user.uid}`);
+        const userCredential = await signInWithEmailAndPassword(
+          firebaseAuth,
+          email,
+          password
+        );
+        console.log(
+          `Login realizado com sucesso. UID obtido: ${userCredential.user.uid}`
+        );
         return userCredential.user.uid;
       } catch (loginError) {
         console.error("Erro ao fazer login no Firebase:", loginError);
@@ -101,20 +131,32 @@ async function seedUsers() {
       email: "admin@admin.com",
       password: "admin123456",
       name: "Administrador",
-      role: RoleEnum.ADMIN
+      role: RoleEnum.ADMIN,
     },
     {
       email: "supervisor@supervisor.com",
       password: "supervisor123456",
       name: "Supervisor",
-      role: RoleEnum.SUPERVISOR
+      role: RoleEnum.SUPERVISOR,
     },
     {
       email: "soldado@soldado.com",
       password: "soldado123456",
       name: "Soldado",
-      role: RoleEnum.SOLDADO
-    }
+      role: RoleEnum.SOLDADO,
+    },
+    {
+      email: "coordenador@agenda.com",
+      password: "coordenador123",
+      name: "Coordenador de Agenda",
+      role: RoleEnum.COORDENADOR_AGENDA,
+    },
+    {
+      email: "paciente@paciente.com",
+      password: "paciente123",
+      name: "Paciente Teste",
+      role: RoleEnum.PACIENTE,
+    },
   ];
 
   const createdUsers: User[] = [];
@@ -123,7 +165,7 @@ async function seedUsers() {
     try {
       // Verificar se usuário já existe
       const existingUser = await userRepository.findOne({
-        where: { email: userData.email }
+        where: { email: userData.email },
       });
 
       if (existingUser) {
@@ -133,21 +175,24 @@ async function seedUsers() {
       }
 
       // Criar usuário no Firebase
-      const firebaseUid = await createFirebaseUser(userData.email, userData.password);
+      const firebaseUid = await createFirebaseUser(
+        userData.email,
+        userData.password
+      );
 
       // Criar usuário no banco usando service
       const userToCreate: UsersType = {
         email: userData.email,
         name: userData.name,
         firebaseUid: firebaseUid,
-        role: userData.role
+        role: userData.role,
       };
 
       await userService.createUser(userToCreate);
 
       // Buscar usuário criado
       const createdUser = await userRepository.findOne({
-        where: { email: userData.email }
+        where: { email: userData.email },
       });
 
       if (createdUser) {
@@ -168,14 +213,17 @@ async function seedStocks() {
 
   const stocksData = [
     { name: "Farmácia", location: "Prédio A - Térreo" },
-    { name: "Almoxarifado", location: "Prédio B - Subsolo" }
+    { name: "Almoxarifado", location: "Prédio B - Subsolo" },
   ];
 
   const createdStocks: Stock[] = [];
 
   for (const stockData of stocksData) {
     try {
-      const stock = await stockService.createStock(stockData.name, stockData.location);
+      const stock = await stockService.createStock(
+        stockData.name,
+        stockData.location
+      );
       createdStocks.push(stock);
       console.log(`Stock criado: ${stockData.name}`);
     } catch (error) {
@@ -193,26 +241,48 @@ async function seedUserStocks(users: User[], stocks: Stock[]) {
   const userStockRepository = AppDataSource.getRepository(UserStock);
 
   const associations = [
-    { userEmail: "admin@admin.com", stockName: "Farmácia", responsibility: StockResponsibility.ADMIN },
-    { userEmail: "admin@admin.com", stockName: "Almoxarifado", responsibility: StockResponsibility.ADMIN },
-    { userEmail: "supervisor@supervisor.com", stockName: "Farmácia", responsibility: StockResponsibility.MANAGER },
-    { userEmail: "supervisor@supervisor.com", stockName: "Almoxarifado", responsibility: StockResponsibility.MANAGER },
-    { userEmail: "soldado@soldado.com", stockName: "Almoxarifado", responsibility: StockResponsibility.USER }
+    {
+      userEmail: "admin@admin.com",
+      stockName: "Farmácia",
+      responsibility: StockResponsibility.ADMIN,
+    },
+    {
+      userEmail: "admin@admin.com",
+      stockName: "Almoxarifado",
+      responsibility: StockResponsibility.ADMIN,
+    },
+    {
+      userEmail: "supervisor@supervisor.com",
+      stockName: "Farmácia",
+      responsibility: StockResponsibility.MANAGER,
+    },
+    {
+      userEmail: "supervisor@supervisor.com",
+      stockName: "Almoxarifado",
+      responsibility: StockResponsibility.MANAGER,
+    },
+    {
+      userEmail: "soldado@soldado.com",
+      stockName: "Almoxarifado",
+      responsibility: StockResponsibility.USER,
+    },
   ];
 
   for (const assoc of associations) {
     try {
-      const user = users.find(u => u.email === assoc.userEmail);
-      const stock = stocks.find(s => s.name === assoc.stockName);
+      const user = users.find((u) => u.email === assoc.userEmail);
+      const stock = stocks.find((s) => s.name === assoc.stockName);
 
       if (!user || !stock) {
-        console.log(`Usuário ou stock não encontrado para associação: ${assoc.userEmail} -> ${assoc.stockName}`);
+        console.log(
+          `Usuário ou stock não encontrado para associação: ${assoc.userEmail} -> ${assoc.stockName}`
+        );
         continue;
       }
 
       // Verificar se associação já existe
       const existingAssoc = await userStockRepository.findOne({
-        where: { userId: user.id, stockId: stock.id }
+        where: { userId: user.id, stockId: stock.id },
       });
 
       if (existingAssoc) {
@@ -225,13 +295,18 @@ async function seedUserStocks(users: User[], stocks: Stock[]) {
         stockId: stock.id,
         responsibility: assoc.responsibility,
         user: user,
-        stock: stock
+        stock: stock,
       });
 
       await userStockRepository.save(userStock);
-      console.log(`Associação criada: ${user.name} -> ${stock.name} (${assoc.responsibility})`);
+      console.log(
+        `Associação criada: ${user.name} -> ${stock.name} (${assoc.responsibility})`
+      );
     } catch (error) {
-      console.error(`Erro ao criar associação ${assoc.userEmail} -> ${assoc.stockName}:`, error);
+      console.error(
+        `Erro ao criar associação ${assoc.userEmail} -> ${assoc.stockName}:`,
+        error
+      );
     }
   }
 }
@@ -246,14 +321,14 @@ async function seedSuppliers() {
       cargoResponsavel: "Diretor Comercial",
       cnpj: "12.345.678/0001-90",
       emailPrimario: "comercial@farmaciacentral.com.br",
-      emailSecundario: "vendas@farmaciacentral.com.br"
+      emailSecundario: "vendas@farmaciacentral.com.br",
     },
     {
       razaoSocial: "Distribuidora Médica Sul",
       nomeResponsavel: "Maria Santos",
       cargoResponsavel: "Gerente de Vendas",
       cnpj: "98.765.432/0001-10",
-      emailPrimario: "vendas@medisul.com.br"
+      emailPrimario: "vendas@medisul.com.br",
     },
     {
       razaoSocial: "Papelaria Escritório Total",
@@ -261,15 +336,15 @@ async function seedSuppliers() {
       cargoResponsavel: "Proprietário",
       cnpj: "11.222.333/0001-44",
       emailPrimario: "contato@escritoriototal.com.br",
-      emailSecundario: "vendas@escritoriototal.com.br"
+      emailSecundario: "vendas@escritoriototal.com.br",
     },
     {
       razaoSocial: "TechEquip Informática",
       nomeResponsavel: "Ana Costa",
       cargoResponsavel: "Diretora",
       cnpj: "55.666.777/0001-88",
-      emailPrimario: "ana@techequip.com.br"
-    }
+      emailPrimario: "ana@techequip.com.br",
+    },
   ];
 
   const createdSuppliers: any[] = [];
@@ -280,12 +355,15 @@ async function seedSuppliers() {
       const fixedCnpj = fixCnpj(supplierData.cnpj);
       const supplier = await supplierService.createSupplier({
         ...supplierData,
-        cnpj: fixedCnpj
+        cnpj: fixedCnpj,
       });
       createdSuppliers.push(supplier);
       console.log(`Fornecedor criado: ${supplierData.razaoSocial}`);
     } catch (error) {
-      console.error(`Erro ao criar fornecedor ${supplierData.razaoSocial}:`, error);
+      console.error(
+        `Erro ao criar fornecedor ${supplierData.razaoSocial}:`,
+        error
+      );
     }
   }
 
@@ -304,7 +382,7 @@ async function seedSections() {
     { name: "Administração" },
     { name: "Recursos Humanos" },
     { name: "Financeiro" },
-    { name: "TI" }
+    { name: "TI" },
   ];
 
   const createdSections: Section[] = [];
@@ -326,7 +404,7 @@ async function seedSections() {
 async function seedMerchandiseTypes(stocks: Stock[]) {
   console.log("=== Criando Tipos de Mercadoria ===");
 
-  const merchandiseTypesData: Omit<MerchandiseTypeType, 'id'>[] = [
+  const merchandiseTypesData: Omit<MerchandiseTypeType, "id">[] = [
     // FARMÁCIA - Medicamentos e Materiais Médicos
     {
       name: "Paracetamol 500mg",
@@ -335,7 +413,7 @@ async function seedMerchandiseTypes(stocks: Stock[]) {
       controlled: true,
       group: MerchandiseGroup.ALMOX_VIRTUAL,
       minimumStock: 100,
-      stockId: stocks[0].id // Farmácia
+      stockId: stocks[0].id, // Farmácia
     },
     {
       name: "Dipirona 500mg",
@@ -344,7 +422,7 @@ async function seedMerchandiseTypes(stocks: Stock[]) {
       controlled: true,
       group: MerchandiseGroup.ALMOX_VIRTUAL,
       minimumStock: 150,
-      stockId: stocks[0].id // Farmácia
+      stockId: stocks[0].id, // Farmácia
     },
     {
       name: "Soro Fisiológico 0,9% 500ml",
@@ -353,7 +431,7 @@ async function seedMerchandiseTypes(stocks: Stock[]) {
       controlled: true,
       group: MerchandiseGroup.ALMOX_VIRTUAL,
       minimumStock: 50,
-      stockId: stocks[0].id // Farmácia
+      stockId: stocks[0].id, // Farmácia
     },
     {
       name: "Seringa Descartável 10ml",
@@ -362,7 +440,7 @@ async function seedMerchandiseTypes(stocks: Stock[]) {
       controlled: false,
       group: MerchandiseGroup.EXPEDIENTE,
       minimumStock: 200,
-      stockId: stocks[0].id // Farmácia
+      stockId: stocks[0].id, // Farmácia
     },
     {
       name: "Luva Descartável Nitrilo",
@@ -371,7 +449,7 @@ async function seedMerchandiseTypes(stocks: Stock[]) {
       controlled: false,
       group: MerchandiseGroup.EXPEDIENTE,
       minimumStock: 500,
-      stockId: stocks[0].id // Farmácia
+      stockId: stocks[0].id, // Farmácia
     },
 
     // ALMOXARIFADO - Material de Escritório e Equipamentos
@@ -382,7 +460,7 @@ async function seedMerchandiseTypes(stocks: Stock[]) {
       controlled: false,
       group: MerchandiseGroup.EXPEDIENTE,
       minimumStock: 100,
-      stockId: stocks[1].id // Almoxarifado
+      stockId: stocks[1].id, // Almoxarifado
     },
     {
       name: "Caneta Esferográfica Azul",
@@ -391,7 +469,7 @@ async function seedMerchandiseTypes(stocks: Stock[]) {
       controlled: false,
       group: MerchandiseGroup.EXPEDIENTE,
       minimumStock: 200,
-      stockId: stocks[1].id // Almoxarifado
+      stockId: stocks[1].id, // Almoxarifado
     },
     {
       name: "Computador Desktop",
@@ -400,16 +478,16 @@ async function seedMerchandiseTypes(stocks: Stock[]) {
       controlled: true,
       group: MerchandiseGroup.PERMANENTE,
       minimumStock: 3,
-      stockId: stocks[1].id // Almoxarifado
+      stockId: stocks[1].id, // Almoxarifado
     },
     {
-      name: "Monitor LED 24\"",
+      name: 'Monitor LED 24"',
       recordNumber: "ALM004",
       unitOfMeasure: "Unidade",
       controlled: true,
       group: MerchandiseGroup.PERMANENTE,
       minimumStock: 5,
-      stockId: stocks[1].id // Almoxarifado
+      stockId: stocks[1].id, // Almoxarifado
     },
     {
       name: "Impressora Multifuncional",
@@ -418,7 +496,7 @@ async function seedMerchandiseTypes(stocks: Stock[]) {
       controlled: true,
       group: MerchandiseGroup.PERMANENTE,
       minimumStock: 2,
-      stockId: stocks[1].id // Almoxarifado
+      stockId: stocks[1].id, // Almoxarifado
     },
 
     // ALMOXARIFADO - Materiais de Limpeza e Manutenção (movidos para o almoxarifado)
@@ -429,7 +507,7 @@ async function seedMerchandiseTypes(stocks: Stock[]) {
       controlled: false,
       group: MerchandiseGroup.LIMPEZA,
       minimumStock: 20,
-      stockId: stocks[1].id // Almoxarifado
+      stockId: stocks[1].id, // Almoxarifado
     },
     {
       name: "Álcool 70% 1L",
@@ -438,7 +516,7 @@ async function seedMerchandiseTypes(stocks: Stock[]) {
       controlled: false,
       group: MerchandiseGroup.LIMPEZA,
       minimumStock: 30,
-      stockId: stocks[1].id // Almoxarifado
+      stockId: stocks[1].id, // Almoxarifado
     },
     {
       name: "Papel Higiênico",
@@ -447,7 +525,7 @@ async function seedMerchandiseTypes(stocks: Stock[]) {
       controlled: false,
       group: MerchandiseGroup.EXPEDIENTE,
       minimumStock: 100,
-      stockId: stocks[1].id // Almoxarifado
+      stockId: stocks[1].id, // Almoxarifado
     },
     {
       name: "Sabonete Líquido 500ml",
@@ -456,7 +534,7 @@ async function seedMerchandiseTypes(stocks: Stock[]) {
       controlled: false,
       group: MerchandiseGroup.LIMPEZA,
       minimumStock: 25,
-      stockId: stocks[1].id // Almoxarifado
+      stockId: stocks[1].id, // Almoxarifado
     },
     {
       name: "Vassoura",
@@ -465,19 +543,23 @@ async function seedMerchandiseTypes(stocks: Stock[]) {
       controlled: false,
       group: MerchandiseGroup.PERMANENTE,
       minimumStock: 10,
-      stockId: stocks[1].id // Almoxarifado
-    }
+      stockId: stocks[1].id, // Almoxarifado
+    },
   ];
 
   const createdMerchandiseTypes: MerchandiseType[] = [];
 
   for (const typeData of merchandiseTypesData) {
     try {
-      const merchandiseType = await merchandiseTypeService.createMerchandiseType(typeData);
+      const merchandiseType =
+        await merchandiseTypeService.createMerchandiseType(typeData);
       createdMerchandiseTypes.push(merchandiseType);
       console.log(`Tipo de mercadoria criado: ${typeData.name}`);
     } catch (error) {
-      console.error(`Erro ao criar tipo de mercadoria ${typeData.name}:`, error);
+      console.error(
+        `Erro ao criar tipo de mercadoria ${typeData.name}:`,
+        error
+      );
     }
   }
 
@@ -492,17 +574,17 @@ async function seedBatches(suppliers: any[]) {
 
   const batchesData = [
     {
-      expirationDate: new Date("2025-12-31")
+      expirationDate: new Date("2025-12-31"),
     },
     {
-      expirationDate: new Date("2025-06-30")
+      expirationDate: new Date("2025-06-30"),
     },
     {
-      expirationDate: new Date("2026-03-15")
+      expirationDate: new Date("2026-03-15"),
     },
     {
-      expirationDate: new Date("2027-01-20")
-    }
+      expirationDate: new Date("2027-01-20"),
+    },
   ];
 
   const createdBatches: Batch[] = [];
@@ -512,9 +594,16 @@ async function seedBatches(suppliers: any[]) {
       const batch = batchRepository.create(batchData);
       const savedBatch = await batchRepository.save(batch);
       createdBatches.push(savedBatch);
-      console.log(`Lote criado com vencimento: ${savedBatch.expirationDate.toISOString().split('T')[0]}`);
+      console.log(
+        `Lote criado com vencimento: ${
+          savedBatch.expirationDate.toISOString().split("T")[0]
+        }`
+      );
     } catch (error) {
-      console.error(`Erro ao criar lote com vencimento ${batchData.expirationDate}:`, error);
+      console.error(
+        `Erro ao criar lote com vencimento ${batchData.expirationDate}:`,
+        error
+      );
     }
   }
 
@@ -522,30 +611,93 @@ async function seedBatches(suppliers: any[]) {
   return createdBatches;
 }
 
-async function seedMerchandises(merchandiseTypes: MerchandiseType[], batches: Batch[]) {
+async function seedMerchandises(
+  merchandiseTypes: MerchandiseType[],
+  batches: Batch[]
+) {
   console.log("=== Criando Mercadorias ===");
 
   const merchandisesData: MerchandiseCreateByRecordNumber[] = [
     // Medicamentos
-    { recordNumber: "MED001", quantity: 500, status: MerchandiseStatus.AVAILABLE },
-    { recordNumber: "MED002", quantity: 750, status: MerchandiseStatus.AVAILABLE },
-    { recordNumber: "MED003", quantity: 200, status: MerchandiseStatus.AVAILABLE },
-    { recordNumber: "MED004", quantity: 1000, status: MerchandiseStatus.AVAILABLE },
-    { recordNumber: "MED005", quantity: 2000, status: MerchandiseStatus.AVAILABLE },
+    {
+      recordNumber: "MED001",
+      quantity: 500,
+      status: MerchandiseStatus.AVAILABLE,
+    },
+    {
+      recordNumber: "MED002",
+      quantity: 750,
+      status: MerchandiseStatus.AVAILABLE,
+    },
+    {
+      recordNumber: "MED003",
+      quantity: 200,
+      status: MerchandiseStatus.AVAILABLE,
+    },
+    {
+      recordNumber: "MED004",
+      quantity: 1000,
+      status: MerchandiseStatus.AVAILABLE,
+    },
+    {
+      recordNumber: "MED005",
+      quantity: 2000,
+      status: MerchandiseStatus.AVAILABLE,
+    },
 
     // Material de escritório
-    { recordNumber: "ALM001", quantity: 300, status: MerchandiseStatus.AVAILABLE },
-    { recordNumber: "ALM002", quantity: 800, status: MerchandiseStatus.AVAILABLE },
-    { recordNumber: "ALM003", quantity: 15, status: MerchandiseStatus.AVAILABLE },
-    { recordNumber: "ALM004", quantity: 20, status: MerchandiseStatus.AVAILABLE },
-    { recordNumber: "ALM005", quantity: 8, status: MerchandiseStatus.AVAILABLE },
+    {
+      recordNumber: "ALM001",
+      quantity: 300,
+      status: MerchandiseStatus.AVAILABLE,
+    },
+    {
+      recordNumber: "ALM002",
+      quantity: 800,
+      status: MerchandiseStatus.AVAILABLE,
+    },
+    {
+      recordNumber: "ALM003",
+      quantity: 15,
+      status: MerchandiseStatus.AVAILABLE,
+    },
+    {
+      recordNumber: "ALM004",
+      quantity: 20,
+      status: MerchandiseStatus.AVAILABLE,
+    },
+    {
+      recordNumber: "ALM005",
+      quantity: 8,
+      status: MerchandiseStatus.AVAILABLE,
+    },
 
     // Material de limpeza
-    { recordNumber: "LMP001", quantity: 50, status: MerchandiseStatus.AVAILABLE },
-    { recordNumber: "LMP002", quantity: 80, status: MerchandiseStatus.AVAILABLE },
-    { recordNumber: "LMP003", quantity: 200, status: MerchandiseStatus.AVAILABLE },
-    { recordNumber: "LMP004", quantity: 60, status: MerchandiseStatus.AVAILABLE },
-    { recordNumber: "LMP005", quantity: 25, status: MerchandiseStatus.AVAILABLE }
+    {
+      recordNumber: "LMP001",
+      quantity: 50,
+      status: MerchandiseStatus.AVAILABLE,
+    },
+    {
+      recordNumber: "LMP002",
+      quantity: 80,
+      status: MerchandiseStatus.AVAILABLE,
+    },
+    {
+      recordNumber: "LMP003",
+      quantity: 200,
+      status: MerchandiseStatus.AVAILABLE,
+    },
+    {
+      recordNumber: "LMP004",
+      quantity: 60,
+      status: MerchandiseStatus.AVAILABLE,
+    },
+    {
+      recordNumber: "LMP005",
+      quantity: 25,
+      status: MerchandiseStatus.AVAILABLE,
+    },
   ];
 
   const createdMerchandises: any[] = [];
@@ -553,11 +705,20 @@ async function seedMerchandises(merchandiseTypes: MerchandiseType[], batches: Ba
 
   for (const merchandiseData of merchandisesData) {
     try {
-      const merchandise = await merchandiseService.createMerchandiseByRecordNumber(merchandiseData, validDate);
+      const merchandise =
+        await merchandiseService.createMerchandiseByRecordNumber(
+          merchandiseData,
+          validDate
+        );
       createdMerchandises.push(merchandise);
-      console.log(`Mercadoria criada: ${merchandiseData.recordNumber} - Qtd: ${merchandiseData.quantity}`);
+      console.log(
+        `Mercadoria criada: ${merchandiseData.recordNumber} - Qtd: ${merchandiseData.quantity}`
+      );
     } catch (error) {
-      console.error(`Erro ao criar mercadoria ${merchandiseData.recordNumber}:`, error);
+      console.error(
+        `Erro ao criar mercadoria ${merchandiseData.recordNumber}:`,
+        error
+      );
     }
   }
 
@@ -565,10 +726,14 @@ async function seedMerchandises(merchandiseTypes: MerchandiseType[], batches: Ba
   return createdMerchandises;
 }
 
-async function seedOrders(sections: Section[], stocks: Stock[], merchandiseTypes: MerchandiseType[]) {
+async function seedOrders(
+  sections: Section[],
+  stocks: Stock[],
+  merchandiseTypes: MerchandiseType[]
+) {
   console.log("=== Criando Pedidos ===");
 
-  const ordersData: Omit<OrderDTO, 'id'>[] = [
+  const ordersData: Omit<OrderDTO, "id">[] = [
     // Pedidos para Enfermaria Geral
     {
       creationDate: new Date("2025-11-06"),
@@ -577,9 +742,19 @@ async function seedOrders(sections: Section[], stocks: Stock[], merchandiseTypes
       sectionId: sections[0].id, // Enfermaria Geral
       stockId: stocks[0].id, // Farmácia
       orderItems: [
-        { merchandiseId: merchandiseTypes.find(mt => mt.recordNumber === "MED001")?.id || "", quantity: 50 },
-        { merchandiseId: merchandiseTypes.find(mt => mt.recordNumber === "MED003")?.id || "", quantity: 10 }
-      ]
+        {
+          merchandiseId:
+            merchandiseTypes.find((mt) => mt.recordNumber === "MED001")?.id ||
+            "",
+          quantity: 50,
+        },
+        {
+          merchandiseId:
+            merchandiseTypes.find((mt) => mt.recordNumber === "MED003")?.id ||
+            "",
+          quantity: 10,
+        },
+      ],
     },
     // Pedidos para UTI
     {
@@ -588,10 +763,25 @@ async function seedOrders(sections: Section[], stocks: Stock[], merchandiseTypes
       sectionId: sections[1].id, // UTI
       stockId: stocks[0].id, // Farmácia
       orderItems: [
-        { merchandiseId: merchandiseTypes.find(mt => mt.recordNumber === "MED002")?.id || "", quantity: 30 },
-        { merchandiseId: merchandiseTypes.find(mt => mt.recordNumber === "MED004")?.id || "", quantity: 100 },
-        { merchandiseId: merchandiseTypes.find(mt => mt.recordNumber === "MED005")?.id || "", quantity: 200 }
-      ]
+        {
+          merchandiseId:
+            merchandiseTypes.find((mt) => mt.recordNumber === "MED002")?.id ||
+            "",
+          quantity: 30,
+        },
+        {
+          merchandiseId:
+            merchandiseTypes.find((mt) => mt.recordNumber === "MED004")?.id ||
+            "",
+          quantity: 100,
+        },
+        {
+          merchandiseId:
+            merchandiseTypes.find((mt) => mt.recordNumber === "MED005")?.id ||
+            "",
+          quantity: 200,
+        },
+      ],
     },
     // Pedidos para Administração
     {
@@ -601,9 +791,19 @@ async function seedOrders(sections: Section[], stocks: Stock[], merchandiseTypes
       sectionId: sections[4].id, // Administração
       stockId: stocks[1].id, // Almoxarifado
       orderItems: [
-        { merchandiseId: merchandiseTypes.find(mt => mt.recordNumber === "ALM001")?.id || "", quantity: 20 },
-        { merchandiseId: merchandiseTypes.find(mt => mt.recordNumber === "ALM002")?.id || "", quantity: 50 }
-      ]
+        {
+          merchandiseId:
+            merchandiseTypes.find((mt) => mt.recordNumber === "ALM001")?.id ||
+            "",
+          quantity: 20,
+        },
+        {
+          merchandiseId:
+            merchandiseTypes.find((mt) => mt.recordNumber === "ALM002")?.id ||
+            "",
+          quantity: 50,
+        },
+      ],
     },
     // Pedidos para TI
     {
@@ -612,9 +812,19 @@ async function seedOrders(sections: Section[], stocks: Stock[], merchandiseTypes
       sectionId: sections[7].id, // TI
       stockId: stocks[1].id, // Almoxarifado
       orderItems: [
-        { merchandiseId: merchandiseTypes.find(mt => mt.recordNumber === "ALM003")?.id || "", quantity: 2 },
-        { merchandiseId: merchandiseTypes.find(mt => mt.recordNumber === "ALM004")?.id || "", quantity: 3 }
-      ]
+        {
+          merchandiseId:
+            merchandiseTypes.find((mt) => mt.recordNumber === "ALM003")?.id ||
+            "",
+          quantity: 2,
+        },
+        {
+          merchandiseId:
+            merchandiseTypes.find((mt) => mt.recordNumber === "ALM004")?.id ||
+            "",
+          quantity: 3,
+        },
+      ],
     },
     // Pedidos para limpeza geral
     {
@@ -624,12 +834,26 @@ async function seedOrders(sections: Section[], stocks: Stock[], merchandiseTypes
       sectionId: sections[4].id, // Administração
       stockId: stocks[1].id, // Almoxarifado
       orderItems: [
-        { merchandiseId: merchandiseTypes.find(mt => mt.recordNumber === "LMP001")?.id || "", quantity: 5 },
-        { merchandiseId: merchandiseTypes.find(mt => mt.recordNumber === "LMP002")?.id || "", quantity: 10 },
-        { merchandiseId: merchandiseTypes.find(mt => mt.recordNumber === "LMP003")?.id || "", quantity: 30 }
-      ]
-    }
-    ,
+        {
+          merchandiseId:
+            merchandiseTypes.find((mt) => mt.recordNumber === "LMP001")?.id ||
+            "",
+          quantity: 5,
+        },
+        {
+          merchandiseId:
+            merchandiseTypes.find((mt) => mt.recordNumber === "LMP002")?.id ||
+            "",
+          quantity: 10,
+        },
+        {
+          merchandiseId:
+            merchandiseTypes.find((mt) => mt.recordNumber === "LMP003")?.id ||
+            "",
+          quantity: 30,
+        },
+      ],
+    },
     // Pedidos recentes (Novembro/2025)
     {
       creationDate: new Date("2025-11-05"),
@@ -637,9 +861,19 @@ async function seedOrders(sections: Section[], stocks: Stock[], merchandiseTypes
       sectionId: sections[1].id, // UTI
       stockId: stocks[0].id, // Farmácia
       orderItems: [
-        { merchandiseId: merchandiseTypes.find(mt => mt.recordNumber === "MED001")?.id || "", quantity: 40 },
-        { merchandiseId: merchandiseTypes.find(mt => mt.recordNumber === "MED003")?.id || "", quantity: 20 }
-      ]
+        {
+          merchandiseId:
+            merchandiseTypes.find((mt) => mt.recordNumber === "MED001")?.id ||
+            "",
+          quantity: 40,
+        },
+        {
+          merchandiseId:
+            merchandiseTypes.find((mt) => mt.recordNumber === "MED003")?.id ||
+            "",
+          quantity: 20,
+        },
+      ],
     },
     {
       creationDate: new Date("2025-11-06"),
@@ -648,9 +882,19 @@ async function seedOrders(sections: Section[], stocks: Stock[], merchandiseTypes
       sectionId: sections[4].id, // Administração
       stockId: stocks[1].id, // Almoxarifado
       orderItems: [
-        { merchandiseId: merchandiseTypes.find(mt => mt.recordNumber === "ALM001")?.id || "", quantity: 30 },
-        { merchandiseId: merchandiseTypes.find(mt => mt.recordNumber === "ALM002")?.id || "", quantity: 60 }
-      ]
+        {
+          merchandiseId:
+            merchandiseTypes.find((mt) => mt.recordNumber === "ALM001")?.id ||
+            "",
+          quantity: 30,
+        },
+        {
+          merchandiseId:
+            merchandiseTypes.find((mt) => mt.recordNumber === "ALM002")?.id ||
+            "",
+          quantity: 60,
+        },
+      ],
     },
     {
       creationDate: new Date("2025-11-07"),
@@ -658,9 +902,19 @@ async function seedOrders(sections: Section[], stocks: Stock[], merchandiseTypes
       sectionId: sections[7].id, // TI
       stockId: stocks[1].id, // Almoxarifado
       orderItems: [
-        { merchandiseId: merchandiseTypes.find(mt => mt.recordNumber === "ALM003")?.id || "", quantity: 1 },
-        { merchandiseId: merchandiseTypes.find(mt => mt.recordNumber === "ALM004")?.id || "", quantity: 2 }
-      ]
+        {
+          merchandiseId:
+            merchandiseTypes.find((mt) => mt.recordNumber === "ALM003")?.id ||
+            "",
+          quantity: 1,
+        },
+        {
+          merchandiseId:
+            merchandiseTypes.find((mt) => mt.recordNumber === "ALM004")?.id ||
+            "",
+          quantity: 2,
+        },
+      ],
     },
     {
       creationDate: new Date("2025-11-07"),
@@ -669,9 +923,19 @@ async function seedOrders(sections: Section[], stocks: Stock[], merchandiseTypes
       sectionId: sections[0].id, // Enfermaria Geral
       stockId: stocks[0].id, // Farmácia
       orderItems: [
-        { merchandiseId: merchandiseTypes.find(mt => mt.recordNumber === "MED004")?.id || "", quantity: 120 },
-        { merchandiseId: merchandiseTypes.find(mt => mt.recordNumber === "MED005")?.id || "", quantity: 150 }
-      ]
+        {
+          merchandiseId:
+            merchandiseTypes.find((mt) => mt.recordNumber === "MED004")?.id ||
+            "",
+          quantity: 120,
+        },
+        {
+          merchandiseId:
+            merchandiseTypes.find((mt) => mt.recordNumber === "MED005")?.id ||
+            "",
+          quantity: 150,
+        },
+      ],
     },
     {
       creationDate: new Date("2025-11-04"),
@@ -680,9 +944,19 @@ async function seedOrders(sections: Section[], stocks: Stock[], merchandiseTypes
       sectionId: sections[3].id, // Emergência
       stockId: stocks[1].id, // Almoxarifado
       orderItems: [
-        { merchandiseId: merchandiseTypes.find(mt => mt.recordNumber === "LMP001")?.id || "", quantity: 8 },
-        { merchandiseId: merchandiseTypes.find(mt => mt.recordNumber === "LMP002")?.id || "", quantity: 12 }
-      ]
+        {
+          merchandiseId:
+            merchandiseTypes.find((mt) => mt.recordNumber === "LMP001")?.id ||
+            "",
+          quantity: 8,
+        },
+        {
+          merchandiseId:
+            merchandiseTypes.find((mt) => mt.recordNumber === "LMP002")?.id ||
+            "",
+          quantity: 12,
+        },
+      ],
     },
     {
       creationDate: new Date("2025-11-03"),
@@ -690,9 +964,19 @@ async function seedOrders(sections: Section[], stocks: Stock[], merchandiseTypes
       sectionId: sections[2].id, // Centro Cirúrgico
       stockId: stocks[0].id, // Farmácia
       orderItems: [
-        { merchandiseId: merchandiseTypes.find(mt => mt.recordNumber === "MED003")?.id || "", quantity: 25 },
-        { merchandiseId: merchandiseTypes.find(mt => mt.recordNumber === "MED004")?.id || "", quantity: 80 }
-      ]
+        {
+          merchandiseId:
+            merchandiseTypes.find((mt) => mt.recordNumber === "MED003")?.id ||
+            "",
+          quantity: 25,
+        },
+        {
+          merchandiseId:
+            merchandiseTypes.find((mt) => mt.recordNumber === "MED004")?.id ||
+            "",
+          quantity: 80,
+        },
+      ],
     },
     {
       creationDate: new Date("2025-11-02"),
@@ -701,9 +985,19 @@ async function seedOrders(sections: Section[], stocks: Stock[], merchandiseTypes
       sectionId: sections[5].id, // Recursos Humanos
       stockId: stocks[1].id, // Almoxarifado
       orderItems: [
-        { merchandiseId: merchandiseTypes.find(mt => mt.recordNumber === "ALM001")?.id || "", quantity: 40 },
-        { merchandiseId: merchandiseTypes.find(mt => mt.recordNumber === "LMP003")?.id || "", quantity: 50 }
-      ]
+        {
+          merchandiseId:
+            merchandiseTypes.find((mt) => mt.recordNumber === "ALM001")?.id ||
+            "",
+          quantity: 40,
+        },
+        {
+          merchandiseId:
+            merchandiseTypes.find((mt) => mt.recordNumber === "LMP003")?.id ||
+            "",
+          quantity: 50,
+        },
+      ],
     },
     {
       creationDate: new Date("2025-11-01"),
@@ -711,9 +1005,19 @@ async function seedOrders(sections: Section[], stocks: Stock[], merchandiseTypes
       sectionId: sections[6].id, // Financeiro
       stockId: stocks[1].id, // Almoxarifado
       orderItems: [
-        { merchandiseId: merchandiseTypes.find(mt => mt.recordNumber === "LMP004")?.id || "", quantity: 20 },
-        { merchandiseId: merchandiseTypes.find(mt => mt.recordNumber === "LMP005")?.id || "", quantity: 5 }
-      ]
+        {
+          merchandiseId:
+            merchandiseTypes.find((mt) => mt.recordNumber === "LMP004")?.id ||
+            "",
+          quantity: 20,
+        },
+        {
+          merchandiseId:
+            merchandiseTypes.find((mt) => mt.recordNumber === "LMP005")?.id ||
+            "",
+          quantity: 5,
+        },
+      ],
     },
     {
       creationDate: new Date("2025-10-30"),
@@ -722,8 +1026,13 @@ async function seedOrders(sections: Section[], stocks: Stock[], merchandiseTypes
       sectionId: sections[1].id, // UTI
       stockId: stocks[0].id, // Farmácia
       orderItems: [
-        { merchandiseId: merchandiseTypes.find(mt => mt.recordNumber === "MED002")?.id || "", quantity: 60 }
-      ]
+        {
+          merchandiseId:
+            merchandiseTypes.find((mt) => mt.recordNumber === "MED002")?.id ||
+            "",
+          quantity: 60,
+        },
+      ],
     },
     {
       creationDate: new Date("2025-10-28"),
@@ -731,9 +1040,14 @@ async function seedOrders(sections: Section[], stocks: Stock[], merchandiseTypes
       sectionId: sections[4].id, // Administração
       stockId: stocks[1].id, // Almoxarifado
       orderItems: [
-        { merchandiseId: merchandiseTypes.find(mt => mt.recordNumber === "ALM005")?.id || "", quantity: 2 }
-      ]
-    }
+        {
+          merchandiseId:
+            merchandiseTypes.find((mt) => mt.recordNumber === "ALM005")?.id ||
+            "",
+          quantity: 2,
+        },
+      ],
+    },
   ];
 
   const createdOrders: any[] = [];
@@ -741,8 +1055,10 @@ async function seedOrders(sections: Section[], stocks: Stock[], merchandiseTypes
   for (const orderData of ordersData) {
     try {
       // Filtrar orderItems que têm merchandiseId válido
-      const validOrderItems = orderData.orderItems.filter(item => item.merchandiseId !== "");
-      
+      const validOrderItems = orderData.orderItems.filter(
+        (item) => item.merchandiseId !== ""
+      );
+
       if (validOrderItems.length === 0) {
         console.log(`Pulando pedido sem itens válidos`);
         continue;
@@ -750,12 +1066,14 @@ async function seedOrders(sections: Section[], stocks: Stock[], merchandiseTypes
 
       const orderToCreate = {
         ...orderData,
-        orderItems: validOrderItems
+        orderItems: validOrderItems,
       };
 
       const order = await orderService.create(orderToCreate);
       createdOrders.push(order);
-      console.log(`Pedido criado: ${order.id} - ${validOrderItems.length} itens`);
+      console.log(
+        `Pedido criado: ${order.id} - ${validOrderItems.length} itens`
+      );
     } catch (error) {
       console.error(`Erro ao criar pedido:`, error);
     }
@@ -772,7 +1090,7 @@ async function dropDatabase() {
   try {
     // Monta lista dinâmica de tabelas a partir dos metadados
     const tableNames = AppDataSource.entityMetadatas
-      .map(meta => `"${meta.tableName}"`)
+      .map((meta) => `"${meta.tableName}"`)
       .join(", ");
 
     if (tableNames.length === 0) {
@@ -805,7 +1123,7 @@ async function recreateDatabase() {
 export async function seedAll() {
   try {
     console.log("🌱 Iniciando seed completo do banco de dados...");
-    
+
     // Conectar ao banco
     if (!AppDataSource.isInitialized) {
       await AppDataSource.initialize();
@@ -817,7 +1135,7 @@ export async function seedAll() {
 
     // Executar seeds na ordem correta
     console.log("\n📋 Executando seeds na ordem de dependências...");
-    
+
     const users = await seedUsers();
     const stocks = await seedStocks();
     await seedUserStocks(users, stocks);
@@ -827,6 +1145,8 @@ export async function seedAll() {
     const batches = await seedBatches(suppliers);
     const merchandises = await seedMerchandises(merchandiseTypes, batches);
     const orders = await seedOrders(sections, stocks, merchandiseTypes);
+    const examTypes = await seedExamTypes();
+    const appointments = await seedAppointments(users, examTypes);
 
     console.log("\n✅ Seed completo executado com sucesso!");
     console.log("📊 Resumo:");
@@ -838,7 +1158,8 @@ export async function seedAll() {
     console.log(`   - ${batches.length} lotes`);
     console.log(`   - ${merchandises.length} mercadorias`);
     console.log(`   - ${orders.length} pedidos`);
-
+    console.log(`   - ${examTypes.length} tipos de exame`);
+    console.log(`   - ${appointments.length} agendamentos`);
   } catch (error) {
     console.error("❌ Erro durante execução do seed:", error);
     throw error;
@@ -856,4 +1177,121 @@ if (require.main === module) {
       console.error("💥 Falha no processo de seed:", error);
       process.exit(1);
     });
+}
+
+async function seedExamTypes() {
+  console.log("=== Criando Tipos de Exame ===");
+
+  const examTypesData = [
+    {
+      nome: "Hemograma Completo",
+      descricao: "Exame de sangue para análise das células sanguíneas.",
+      duracaoEstimada: 15,
+      preparoNecessario: "Jejum de 8 horas para melhor resultado",
+    },
+    {
+      nome: "Raio-X Torácico",
+      descricao: "Imagem do tórax para avaliação pulmonar e cardíaca.",
+      duracaoEstimada: 20,
+      preparoNecessario: "Retirar objetos metálicos",
+    },
+    {
+      nome: "Ultrassom Abdominal",
+      descricao: "Avaliação dos órgãos abdominais.",
+      duracaoEstimada: 30,
+      preparoNecessario: "Jejum de 6 a 8 horas",
+    },
+    {
+      nome: "Eletrocardiograma (ECG)",
+      descricao: "Registro da atividade elétrica do coração.",
+      duracaoEstimada: 10,
+      preparoNecessario: "Evitar creme/óleos sobre o tórax",
+    },
+    {
+      nome: "Tomografia Computadorizada (TC) de Crânio",
+      descricao: "Exame de imagem para avaliação cerebral.",
+      duracaoEstimada: 25,
+      preparoNecessario: "Seguir instruções específicas do centro de imagem",
+    },
+  ];
+
+  const created: any[] = [];
+  for (const et of examTypesData) {
+    try {
+      const createdEt = await examTypeService.create(et as any);
+      created.push(createdEt);
+      console.log(`Tipo de exame criado: ${et.nome}`);
+    } catch (error) {
+      console.error(`Erro ao criar tipo de exame ${et.nome}:`, error);
+    }
+  }
+
+  console.log(`${created.length} tipos de exame criados.`);
+  return created;
+}
+
+async function seedAppointments(users: User[], examTypes: any[]) {
+  console.log("=== Criando mocks de agendamentos (exames) ===");
+
+  const created: any[] = [];
+
+  // escolher pacientes disponíveis (usar usuários já criados)
+  // preferir usuário com role PACIENTE criado pelo seed
+  const paciente =
+    users.find((u) => u.email === "paciente@paciente.com") || users.find((u) => u.email === "soldado@soldado.com") || users[0];
+
+  const appointmentsData = [
+    {
+      pacienteId: paciente.id,
+      examTypeId: examTypes[0]?.id || "",
+      dataHora: new Date(Date.now() + 24 * 3600 * 1000).toISOString(),
+      observacoes: "Jejum necessário",
+    },
+    {
+      pacienteId: paciente.id,
+      examTypeId: examTypes[1]?.id || "",
+      dataHora: new Date(Date.now() + 2 * 24 * 3600 * 1000).toISOString(),
+      observacoes: "Trazer pedido médico",
+    },
+    {
+      pacienteId: paciente.id,
+      examTypeId: examTypes[2]?.id || "",
+      dataHora: new Date(
+        Date.now() + 3 * 24 * 3600 * 1000 + 3600 * 1000
+      ).toISOString(),
+      observacoes: "Chegar 15 minutos antes",
+    },
+    {
+      pacienteId: paciente.id,
+      examTypeId: examTypes[3]?.id || "",
+      dataHora: new Date(
+        Date.now() + 4 * 24 * 3600 * 1000 + 2 * 3600 * 1000
+      ).toISOString(),
+      observacoes: "Sem restrições",
+    },
+  ];
+
+  for (const ap of appointmentsData) {
+    try {
+      if (!ap.examTypeId) {
+        console.log("Pulando agendamento: tipo de exame inválido");
+        continue;
+      }
+      const createdAp = await appointmentService.create({
+        pacienteId: ap.pacienteId,
+        examTypeId: ap.examTypeId,
+        dataHora: ap.dataHora,
+        observacoes: ap.observacoes,
+      });
+      created.push(createdAp);
+      console.log(
+        `Agendamento criado: ${createdAp.id} - ${createdAp.dataHora}`
+      );
+    } catch (error) {
+      console.error("Erro ao criar agendamento:", error);
+    }
+  }
+
+  console.log(`${created.length} agendamentos criados.`);
+  return created;
 }

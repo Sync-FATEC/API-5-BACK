@@ -2,6 +2,7 @@ import { Request, Response, NextFunction } from "express";
 import { UsersType } from "../types/UsersType";
 import { SystemError } from "../middlewares/SystemError";
 import { UserServices } from "../services/UserServices";
+import { RoleEnum } from "../database/enums/RoleEnum";
 
 const userServices = new UserServices();
 export class UserController {
@@ -17,7 +18,10 @@ export class UserController {
                 if (!user.name || !user.email || !user.role) {
                     throw new SystemError("Dados incompletos em um ou mais usuários");
                 }
-            }
+              if (user.role !== RoleEnum.PACIENTE) {
+          throw new SystemError("Cadastro permitido apenas para usuários com role PACIENTE");
+        }
+      }
 
             const userTypes = users.map(user => ({
                 email: user.email,

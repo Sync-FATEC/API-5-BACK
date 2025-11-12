@@ -161,23 +161,41 @@ export class UsersRepository {
     }
 
     // Função para buscar todos os usuários
-    async getAllUsers() {
-        try {
-            return await repository.find({
+  async getAllUsers() {
+    try {
+      return await repository.find({
                 relations: {
                     userStocks: {
                         stock: true
                     }
                 },
-                order: {
-                    createdAt: 'DESC'
-                }
-            });
-        } catch (error) {
-            console.error("Erro ao buscar todos os usuários", error);
-            throw error;
+        order: {
+          createdAt: 'DESC'
         }
+      });
+    } catch (error) {
+      console.error("Erro ao buscar todos os usuários", error);
+      throw error;
     }
+  }
+
+  async searchPatients(query?: string) {
+    try {
+      const qb = repository.createQueryBuilder('u')
+        .where('u.role = :role', { role: RoleEnum.PACIENTE })
+        .andWhere('u.isActive = :active', { active: true })
+        .orderBy('u.name', 'ASC');
+
+      if (query && query.trim()) {
+        qb.andWhere('(LOWER(u.name) LIKE :q OR LOWER(u.email) LIKE :q)', { q: `%${query.trim().toLowerCase()}%` });
+      }
+
+      return qb.getMany();
+    } catch (error) {
+      console.error("Erro ao buscar pacientes", error);
+      throw error;
+    }
+  }
 
     // Função para atualizar usuário
     async updateUser(userId: string, updateData: { name?: string; email?: string; role?: RoleEnum; isActive?: boolean }) {

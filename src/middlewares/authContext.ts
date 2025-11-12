@@ -123,9 +123,13 @@ export class AuthMiddleware {
         const userRole = await userRepository.getUserRole(firebaseUid);
 
         const roleHierarchy: { [key: string]: string[] } = {
+          // Hierarquia existente
           'SOLDADO': ['SOLDADO'],
           'SUPERVISOR': ['SOLDADO', 'SUPERVISOR'],
-          'ADMIN': ['SOLDADO', 'SUPERVISOR', 'ADMIN']
+          'ADMIN': ['SOLDADO', 'SUPERVISOR', 'ADMIN', 'PACIENTE', 'COORDENADOR_AGENDA'],
+          // Novos perfis para módulo de agenda
+          'PACIENTE': ['PACIENTE'],
+          'COORDENADOR_AGENDA': ['PACIENTE', 'COORDENADOR_AGENDA']
         };
 
         const userAccessibleRoles = roleHierarchy[userRole] || [];
@@ -133,6 +137,14 @@ export class AuthMiddleware {
         const hasPermission = userAccessibleRoles.includes(role);
 
         if (!hasPermission) {
+          // Log da tentativa de acesso não autorizado
+          const attemptedPath = req.originalUrl;
+          const method = req.method;
+          console.warn(
+            `[RBAC] Tentativa bloqueada: uid=${firebaseUid} role=${userRole} ` +
+            `requer=${role} rota=${method} ${attemptedPath}`
+          );
+
           res.status(403).json({ 
             error: 'Permissões insuficientes.',
             code: 'INSUFFICIENT_PERMISSIONS'
