@@ -9,7 +9,7 @@ const repository = AppDataSource.getRepository(Appointment);
 const examTypeRepo = AppDataSource.getRepository(ExamType);
 
 export class AppointmentRepository {
-  async create(data: { pacienteId: string; examTypeId: string; dataHora: Date; observacoes?: string }) {
+  async create(data: { pacienteId: string; examTypeId: string; dataHora: Date; observacoes?: string; dataRetirada?: Date }) {
     const examType = await examTypeRepo.findOne({ where: { id: data.examTypeId, isActive: true } });
     if (!examType) throw new SystemError("Tipo de exame não encontrado");
 

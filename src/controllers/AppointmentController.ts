@@ -15,8 +15,8 @@ const appointmentRepo = new AppointmentRepository();
 export class AppointmentController {
   async create(req: Request, res: Response, next: NextFunction) {
     try {
-      const { pacienteId, examTypeId, dataHora, observacoes } = req.body;
-      const created = await service.create({ pacienteId, examTypeId, dataHora, observacoes });
+      const { pacienteId, examTypeId, dataHora, observacoes, dataRetirada } = req.body;
+      const created = await service.create({ pacienteId, examTypeId, dataHora, observacoes, dataRetirada });
       res.status(201).json({ success: true, data: created, message: "Agendamento criado" });
     } catch (error) { next(error); }
   }
@@ -48,8 +48,8 @@ export class AppointmentController {
     try {
       const { id } = req.params;
       if (!id) throw new SystemError("ID é obrigatório");
-      const { dataHora, status, observacoes } = req.body;
-      const updated = await service.update(id, { dataHora, status, observacoes });
+      const { dataHora, status, observacoes, examTypeId, dataRetirada } = req.body;
+      const updated = await service.update(id, { dataHora, status, observacoes, examTypeId, dataRetirada });
       res.status(200).json({ success: true, data: updated, message: "Agendamento atualizado" });
     } catch (error) { next(error); }
   }

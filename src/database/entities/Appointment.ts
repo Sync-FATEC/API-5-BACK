@@ -23,6 +23,10 @@ export class Appointment {
   @Column({ type: 'timestamp' })
   dataHora!: Date;
 
+  // Data/hora para retirada de material (opcional), ex.: exame de fezes
+  @Column({ type: 'timestamp', nullable: true })
+  dataRetirada?: Date;
+
   @Column({ type: 'enum', enum: AppointmentStatus, default: AppointmentStatus.AGENDADO })
   status!: AppointmentStatus;
 
