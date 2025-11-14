@@ -6,6 +6,7 @@ import { AppDataSource } from "./database/data-source";
 import { authMiddleware } from "./middlewares/authContext";
 import { systemErrorHandler } from "./middlewares/SystemError";
 import { OrderScheduler } from "./schedulers/OrderScheduler";
+import { CommitmentNoteScheduler } from "./schedulers/CommitmentNoteScheduler";
 
 import authRouter from "./routes/authRoutes";
 import stockRouter from "./routes/StockRoutes";
@@ -68,6 +69,9 @@ AppDataSource.initialize()
       
       const orderScheduler = new OrderScheduler();
       orderScheduler.startScheduler(15);
+      const neScheduler = new CommitmentNoteScheduler();
+      const neInterval = Number(process.env.NE_SCHEDULER_INTERVAL_MINUTES || 60);
+      neScheduler.startScheduler(neInterval);
     });
   })
   .catch((err) => console.error("Data Source init error:", err));

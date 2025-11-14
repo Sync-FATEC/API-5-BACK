@@ -16,6 +16,8 @@ import { CommitmentNote } from "./entities/CommitmentNote";
 import { ExamType } from "./entities/ExamType";
 import { Appointment } from "./entities/Appointment";
 import { EntryHistory } from "./entities/EntryHistory";
+import { EmailLog } from "./entities/EmailLog";
+import { EmailTemplate } from "./entities/EmailTemplate";
 config();
 
 export const AppDataSource = new DataSource({
@@ -24,5 +26,5 @@ export const AppDataSource = new DataSource({
   synchronize: true,
   ssl: { rejectUnauthorized: false },
   logging: false,
-  entities: [User, Batch, Merchandise, MerchandiseType, Order, OrderItem, Stock, UserStock, Section, LogMerchandiseType, Supplier, EntryHistory, ExamType, Appointment, CommitmentNote],
+  entities: [User, Batch, Merchandise, MerchandiseType, Order, OrderItem, Stock, UserStock, Section, LogMerchandiseType, Supplier, EntryHistory, ExamType, Appointment, CommitmentNote, EmailLog, EmailTemplate],
 });

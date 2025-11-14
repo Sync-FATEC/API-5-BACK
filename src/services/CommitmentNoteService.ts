@@ -2,8 +2,10 @@ import { SystemError } from "../middlewares/SystemError";
 import { CommitmentNoteRepository } from "../repository/CommitmentNoteRepository";
 import { CommitmentNoteCreateDTO, CommitmentNoteUpdateDTO, CommitmentNoteAdminUpdateDTO } from "../types/CommitmentNoteType";
 import { RoleEnum } from "../database/enums/RoleEnum";
+import { CommitmentNoteEmailService } from "./CommitmentNoteEmailService";
 
 const repository = new CommitmentNoteRepository();
+const emailService = new CommitmentNoteEmailService();
 
 function toDate(value: string | Date): Date {
   return value instanceof Date ? value : new Date(value);
@@ -57,7 +59,13 @@ export class CommitmentNoteService {
         isActive: true,
       };
 
-      return await repository.create(entityData);
+      const created = await repository.create(entityData);
+      try {
+        await emailService.sendEntrada(created);
+      } catch (e) {
+        console.warn("Falha ao disparar e-mail de entrada de NE:", e);
+      }
+      return created;
     } catch (error) {
       console.error("Erro no serviço de Nota de Empenho (create):", error);
       throw error;
@@ -162,10 +170,16 @@ export class CommitmentNoteService {
       if (current.finalizada) {
         throw new SystemError("Nota de empenho já está finalizada");
       }
-      return await repository.update(id, {
+      const updated = await repository.update(id, {
         finalizada: true,
         dataFinalizacao: new Date(),
       });
+      try {
+        await emailService.sendFinalizacao(updated);
+      } catch (e) {
+        console.warn("Falha ao disparar e-mail de finalização de NE:", e);
+      }
+      return updated;
     } catch (error) {
       console.error("Erro ao finalizar nota de empenho:", error);
       throw error;
