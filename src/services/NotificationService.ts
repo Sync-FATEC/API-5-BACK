@@ -10,14 +10,19 @@ export class NotificationService {
   private templateService = new EmailTemplateService();
 
   constructor() {
+    const emailUser = process.env.EMAIL;
+    let emailPass = process.env.EMAIL_PASSWORD || "";
+
+    // Remove espaços que vem no App Password do Gmail
+    emailPass = emailPass.replace(/\s/g, '');
+
+    // === CONFIGURAÇÃO CORRETA PARA GMAIL ===
     this.transporter = nodemailer.createTransport({
-      host: process.env.SMTP_HOST || 'localhost',
-      port: Number(process.env.SMTP_PORT || 1025),
-      secure: (process.env.SMTP_SECURE || 'false') === 'true',
-      auth: process.env.SMTP_USER && process.env.SMTP_PASS ? {
-        user: process.env.SMTP_USER,
-        pass: process.env.SMTP_PASS,
-      } : undefined,
+      service: "gmail",
+      auth: {
+        user: emailUser,
+        pass: emailPass,
+      }
     });
   }
 
@@ -25,11 +30,22 @@ export class NotificationService {
     to: string,
     subject: string,
     body: string,
-    options?: { html?: string; cc?: string | string[]; bcc?: string | string[]; attachments?: Array<{ filename: string; content: Buffer | string; contentType?: string }>; meta?: { appointmentId?: string; event?: NotificationEvent } }
+    options?: {
+      html?: string;
+      cc?: string | string[];
+      bcc?: string | string[];
+      attachments?: Array<{
+        filename: string;
+        content: Buffer | string;
+        contentType?: string;
+      }>;
+      meta?: { appointmentId?: string; event?: NotificationEvent };
+    }
   ): Promise<{ success: boolean; messageId?: string; errorMessage?: string }> {
+
     try {
       const info = await this.transporter.sendMail({
-        from: process.env.SMTP_FROM || 'no-reply@clinic.local',
+        from: process.env.SMTP_FROM || process.env.EMAIL || 'no-reply@sistema.local',
         to,
         cc: options?.cc,
         bcc: options?.bcc,
@@ -38,6 +54,8 @@ export class NotificationService {
         html: options?.html ?? undefined,
         attachments: options?.attachments,
       });
+
+      // Log de sucesso
       await this.logRepo.log({
         appointmentId: options?.meta?.appointmentId,
         recipient: to,
@@ -47,9 +65,13 @@ export class NotificationService {
         event: options?.meta?.event || NotificationEvent.SCHEDULED,
         success: true,
       });
+
       return { success: true, messageId: info?.messageId };
+
     } catch (error: any) {
-      console.warn('Falha ao enviar e-mail (simulado/logado):', error);
+      console.warn('Falha ao enviar e-mail:', error);
+
+      // Log de erro
       await this.logRepo.log({
         appointmentId: options?.meta?.appointmentId,
         recipient: to,
@@ -60,57 +82,77 @@ export class NotificationService {
         success: false,
         errorMessage: String(error?.message || error),
       });
+
       return { success: false, errorMessage: String(error?.message || error) };
     }
   }
 
-  async sendTemplateEmail(to: string, templateName: string, vars: Record<string, string>, meta?: { appointmentId?: string; event?: NotificationEvent }) {
+  async sendTemplateEmail(
+    to: string,
+    templateName: string,
+    vars: Record<string, string>,
+    meta?: { appointmentId?: string; event?: NotificationEvent }
+  ) {
     const rendered = await this.templateService.renderByName(templateName, vars);
     return this.sendEmail(to, rendered.subject, '', { html: rendered.html, meta });
   }
 
-  async sendSMS(phone: string, message: string, meta?: { appointmentId?: string; event?: NotificationEvent }) {
+  async sendSMS(
+    phone: string,
+    message: string,
+    meta?: { appointmentId?: string; event?: NotificationEvent }
+  ) {
     try {
       const sid = process.env.TWILIO_ACCOUNT_SID;
       const token = process.env.TWILIO_AUTH_TOKEN;
       const from = process.env.TWILIO_FROM;
+
       if (sid && token && from) {
         const client = twilio(sid, token);
         await client.messages.create({ to: phone, from, body: message });
+
         await this.logRepo.log({
           appointmentId: meta?.appointmentId,
           recipient: phone,
-          subject: 'SMS',
+          subject: "SMS",
           content: message,
           channel: NotificationChannel.SMS,
           event: meta?.event || NotificationEvent.SCHEDULED,
           success: true,
         });
+
         return true;
       }
+
+      // Modo simulado (não tem Twilio configurado)
       console.log(`SMS (simulado) para ${phone}: ${message}`);
+
       await this.logRepo.log({
         appointmentId: meta?.appointmentId,
         recipient: phone,
-        subject: 'SMS',
+        subject: "SMS",
         content: message,
         channel: NotificationChannel.SMS,
         event: meta?.event || NotificationEvent.SCHEDULED,
         success: true,
       });
+
       return true;
-    } catch (error) {
-      console.warn('Falha ao enviar SMS (simulado/logado):', error);
+
+    } catch (error: any) {
+      console.warn("Falha ao enviar SMS:", error);
+
       await this.logRepo.log({
         appointmentId: meta?.appointmentId,
         recipient: phone,
-        subject: 'SMS',
+        subject: "SMS",
         content: message,
         channel: NotificationChannel.SMS,
         event: meta?.event || NotificationEvent.SCHEDULED,
         success: false,
-        errorMessage: String((error as any)?.message || error as any),
+        errorMessage: String(error?.message || error),
       });
+
       return false;
     }
   }
