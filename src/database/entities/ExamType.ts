@@ -1,4 +1,5 @@
-import { Column, Entity, PrimaryGeneratedColumn } from "typeorm";
+import { Column, Entity, OneToMany, PrimaryGeneratedColumn } from "typeorm";
+import { ExamPreparationInstruction } from "./ExamPreparationInstruction";
 
 @Entity()
 export class ExamType {
@@ -20,4 +21,7 @@ export class ExamType {
 
   @Column({ type: 'boolean', default: true })
   isActive!: boolean;
+
+  @OneToMany(() => ExamPreparationInstruction, (instr) => instr.examType)
+  instrucoes?: ExamPreparationInstruction[];
 }

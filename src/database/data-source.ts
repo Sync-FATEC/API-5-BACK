@@ -14,10 +14,13 @@ import { LogMerchandiseType } from "./entities/LogMerchandiseType";
 import { Supplier } from "./entities/Supplier";
 import { CommitmentNote } from "./entities/CommitmentNote";
 import { ExamType } from "./entities/ExamType";
+import { ExamPreparationInstruction } from "./entities/ExamPreparationInstruction";
 import { Appointment } from "./entities/Appointment";
 import { EntryHistory } from "./entities/EntryHistory";
 import { EmailLog } from "./entities/EmailLog";
+import { NotificationLog } from "./entities/NotificationLog";
 import { EmailTemplate } from "./entities/EmailTemplate";
+import { EmailTemplateVersion } from "./entities/EmailTemplateVersion";
 config();
 
 export const AppDataSource = new DataSource({
@@ -26,5 +29,5 @@ export const AppDataSource = new DataSource({
   synchronize: true,
   ssl: { rejectUnauthorized: false },
   logging: false,
-  entities: [User, Batch, Merchandise, MerchandiseType, Order, OrderItem, Stock, UserStock, Section, LogMerchandiseType, Supplier, EntryHistory, ExamType, Appointment, CommitmentNote, EmailLog, EmailTemplate],
+  entities: [User, Batch, Merchandise, MerchandiseType, Order, OrderItem, Stock, UserStock, Section, LogMerchandiseType, Supplier, EntryHistory, ExamType, Appointment, CommitmentNote, ExamPreparationInstruction, NotificationLog, EmailTemplate, EmailTemplateVersion, EmailLog, EmailTemplate],
 });

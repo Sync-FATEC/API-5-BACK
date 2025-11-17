@@ -1,5 +1,6 @@
-import { Column, Entity, PrimaryGeneratedColumn } from 'typeorm';
+import { Column, Entity, PrimaryGeneratedColumn, OneToMany } from 'typeorm';
 import { EmailType } from '../enums/EmailType';
+import { EmailTemplateVersion } from './EmailTemplateVersion';
 
 @Entity()
 export class EmailTemplate {
@@ -20,4 +21,7 @@ export class EmailTemplate {
 
   @Column({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP', onUpdate: 'CURRENT_TIMESTAMP' })
   updatedAt!: Date;
+
+  @OneToMany(() => EmailTemplateVersion, (v: EmailTemplateVersion) => v.template)
+  versions?: EmailTemplateVersion[];
 }

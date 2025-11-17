@@ -6,6 +6,7 @@ import { AppDataSource } from "./database/data-source";
 import { authMiddleware } from "./middlewares/authContext";
 import { systemErrorHandler } from "./middlewares/SystemError";
 import { OrderScheduler } from "./schedulers/OrderScheduler";
+import { AppointmentScheduler } from "./schedulers/AppointmentScheduler";
 import { CommitmentNoteScheduler } from "./schedulers/CommitmentNoteScheduler";
 
 import authRouter from "./routes/authRoutes";
@@ -19,6 +20,8 @@ import reportRouter from "./routes/ReportRoutes";
 import examTypeRouter from "./routes/ExamTypeRoutes";
 import appointmentRouter from "./routes/AppointmentRoutes";
 import commitmentNoteRouter from "./routes/CommitmentNoteRoutes";
+import examPreparationRouter from "./routes/ExamPreparationInstructionRoutes";
+import emailTemplateRouter from "./routes/EmailTemplateRoutes";
 
 const swaggerOptions = {
   definition: {
@@ -59,6 +62,8 @@ app.use("/suppliers", supplierRouter);
 app.use("/commitment-notes", commitmentNoteRouter);
 app.use("/reports", reportRouter);
 app.use("/exam-types", examTypeRouter);
+app.use("/exam-preparations", examPreparationRouter);
+app.use("/email-templates", emailTemplateRouter);
 app.use("/appointments", appointmentRouter);
 app.use(systemErrorHandler);
 
@@ -69,9 +74,6 @@ AppDataSource.initialize()
       
       const orderScheduler = new OrderScheduler();
       orderScheduler.startScheduler(15);
-      const neScheduler = new CommitmentNoteScheduler();
-      const neInterval = Number(process.env.NE_SCHEDULER_INTERVAL_MINUTES || 60);
-      neScheduler.startScheduler(neInterval);
     });
   })
   .catch((err) => console.error("Data Source init error:", err));

@@ -26,6 +26,11 @@ import { MerchandiseService } from "../services/MerchandiseService";
 import { OrderService } from "../services/OrderService";
 import { ExamTypeService } from "../services/ExamTypeService";
 import { AppointmentService } from "../services/AppointmentService";
+import { ExamPreparationInstructionService } from "../services/ExamPreparationInstructionService";
+import { EmailTemplateService } from "../services/EmailTemplateService";
+import { readFileSync } from "fs";
+import { join } from "path";
+import { Client } from "pg";
 
 // Types
 import { UsersType } from "../types/UsersType";
@@ -54,6 +59,8 @@ const merchandiseService = new MerchandiseService();
 const orderService = new OrderService();
 const examTypeService = new ExamTypeService();
 const appointmentService = new AppointmentService();
+const examPrepService = new ExamPreparationInstructionService();
+const emailTemplateService = new EmailTemplateService();
 
 // Helpers para CNPJ na execução de seeds (mantém serviços intactos)
 function normalizeCnpjStr(cnpj: string): string {
@@ -1124,7 +1131,24 @@ export async function seedAll() {
   try {
     console.log("🌱 Iniciando seed completo do banco de dados...");
 
-    // Conectar ao banco
+    const dbUrl = process.env.DB_URL as string;
+    if (dbUrl) {
+      try {
+        const client = new Client({ connectionString: dbUrl, ssl: { rejectUnauthorized: false } });
+        await client.connect();
+        const existsRes = await client.query("SELECT EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema='public' AND table_name='email_template') AS exists");
+        const exists = existsRes.rows?.[0]?.exists === true;
+        if (exists) {
+          await client.query('ALTER TABLE "email_template" ADD COLUMN IF NOT EXISTS "type" character varying(20)');
+          await client.query("UPDATE \"email_template\" SET \"type\" = 'cobranca' WHERE \"type\" IS NULL");
+          await client.query('ALTER TABLE "email_template" ALTER COLUMN "type" SET NOT NULL');
+        }
+        await client.end();
+      } catch (e) {
+        console.error('Falha ao preparar tabela email_template:', e);
+      }
+    }
+
     if (!AppDataSource.isInitialized) {
       await AppDataSource.initialize();
     }
@@ -1144,9 +1168,11 @@ export async function seedAll() {
     const merchandiseTypes = await seedMerchandiseTypes(stocks);
     const batches = await seedBatches(suppliers);
     const merchandises = await seedMerchandises(merchandiseTypes, batches);
-    const orders = await seedOrders(sections, stocks, merchandiseTypes);
-    const examTypes = await seedExamTypes();
-    const appointments = await seedAppointments(users, examTypes);
+  const orders = await seedOrders(sections, stocks, merchandiseTypes);
+  const examTypes = await seedExamTypes();
+  const appointments = await seedAppointments(users, examTypes);
+  const examPreparations = await seedExamPreparations(examTypes);
+  const emailTemplates = await seedEmailTemplates();
 
     console.log("\n✅ Seed completo executado com sucesso!");
     console.log("📊 Resumo:");
@@ -1158,8 +1184,10 @@ export async function seedAll() {
     console.log(`   - ${batches.length} lotes`);
     console.log(`   - ${merchandises.length} mercadorias`);
     console.log(`   - ${orders.length} pedidos`);
-    console.log(`   - ${examTypes.length} tipos de exame`);
-    console.log(`   - ${appointments.length} agendamentos`);
+  console.log(`   - ${examTypes.length} tipos de exame`);
+  console.log(`   - ${appointments.length} agendamentos`);
+  console.log(`   - ${examPreparations.length} instruções de preparo`);
+  console.log(`   - ${emailTemplates.length} templates de e-mail`);
   } catch (error) {
     console.error("❌ Erro durante execução do seed:", error);
     throw error;
@@ -1293,5 +1321,74 @@ async function seedAppointments(users: User[], examTypes: any[]) {
   }
 
   console.log(`${created.length} agendamentos criados.`);
+  return created;
+}
+
+async function seedExamPreparations(examTypes: any[]) {
+  console.log("=== Criando Instruções de Preparo de Exames ===");
+  const created: any[] = [];
+  const map = new Map<string, { titulo: string; conteudo: string; ordem: number }[]>();
+  const hemograma = examTypes.find((e: any) => e.nome?.includes("Hemograma"));
+  const raioX = examTypes.find((e: any) => e.nome?.includes("Raio-X"));
+  const usAbd = examTypes.find((e: any) => e.nome?.includes("Ultrassom Abdominal"));
+
+  if (hemograma) {
+    map.set(hemograma.id, [
+      { titulo: "Jejum", conteudo: "Realizar jejum de 8 horas antes do exame.", ordem: 1 },
+      { titulo: "Hidratação", conteudo: "Beber água normalmente; evitar bebidas alcoólicas por 24h.", ordem: 2 },
+      { titulo: "Medicações", conteudo: "Não interromper uso de medicamentos sem orientação médica.", ordem: 3 },
+    ]);
+  }
+  if (raioX) {
+    map.set(raioX.id, [
+      { titulo: "Retirar objetos metálicos", conteudo: "Não usar correntes, brincos, relógios ou roupas com metal.", ordem: 1 },
+      { titulo: "Gestantes", conteudo: "Informar a possibilidade de gravidez ao técnico responsável.", ordem: 2 },
+    ]);
+  }
+  if (usAbd) {
+    map.set(usAbd.id, [
+      { titulo: "Jejum", conteudo: "Jejum de 6 a 8 horas para melhor avaliação.", ordem: 1 },
+      { titulo: "Evitar gases", conteudo: "Evitar alimentos que causem gases nas 24h anteriores.", ordem: 2 },
+    ]);
+  }
+
+  for (const [examTypeId, instrList] of map.entries()) {
+    for (const instr of instrList) {
+      try {
+        const createdInstr = await examPrepService.create({ examTypeId, titulo: instr.titulo, conteudo: instr.conteudo, ordem: instr.ordem });
+        created.push(createdInstr);
+        console.log(`Instrução criada: ${instr.titulo} (examType=${examTypeId})`);
+      } catch (error) {
+        console.error("Erro ao criar instrução de preparo:", error);
+      }
+    }
+  }
+
+  console.log(`${created.length} instruções de preparo criadas.`);
+  return created;
+}
+
+async function seedEmailTemplates() {
+  console.log("=== Criando Templates de E-mail ===");
+  const created: any[] = [];
+  try {
+    const html = readFileSync(join(__dirname, "..", "templates", "email", "BaseNE.html"), "utf8");
+    try {
+      const tpl = await emailTemplateService.upsert("cobranca" as any, "Solicitação de entrega por NE {NUMERO_NE}", html);
+      created.push(tpl);
+      console.log("Template upsert: tipo=cobranca");
+    } catch (e) {
+      const list = await emailTemplateService.list();
+      const existing = list.find((x: any) => x.type === "cobranca");
+      if (existing) {
+        created.push(existing);
+        console.log("Template existente: tipo=cobranca");
+      }
+    }
+  } catch (error) {
+    console.error("Erro ao carregar BaseNE.html para seed:", error);
+  }
+
+  console.log(`${created.length} templates de e-mail criados/validados.`);
   return created;
 }
