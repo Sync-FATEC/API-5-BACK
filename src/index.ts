@@ -22,6 +22,7 @@ import appointmentRouter from "./routes/AppointmentRoutes";
 import commitmentNoteRouter from "./routes/CommitmentNoteRoutes";
 import examPreparationRouter from "./routes/ExamPreparationInstructionRoutes";
 import emailTemplateRouter from "./routes/EmailTemplateRoutes";
+import emailLogRouter from "./routes/EmailLogRoutes";
 
 const swaggerOptions = {
   definition: {
@@ -64,6 +65,7 @@ app.use("/reports", reportRouter);
 app.use("/exam-types", examTypeRouter);
 app.use("/exam-preparations", examPreparationRouter);
 app.use("/email-templates", emailTemplateRouter);
+app.use("/email-logs", emailLogRouter);
 app.use("/appointments", appointmentRouter);
 app.use(systemErrorHandler);
 
@@ -74,6 +76,9 @@ AppDataSource.initialize()
       
       const orderScheduler = new OrderScheduler();
       orderScheduler.startScheduler(15);
+      const neScheduler = new CommitmentNoteScheduler();
+      const neInterval = Number(process.env.NE_SCHEDULER_INTERVAL_MINUTES || 60);
+      neScheduler.startScheduler(neInterval);
     });
   })
   .catch((err) => console.error("Data Source init error:", err));

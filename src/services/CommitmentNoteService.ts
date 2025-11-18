@@ -60,8 +60,9 @@ export class CommitmentNoteService {
       };
 
       const created = await repository.create(entityData);
+      const hydrated = await repository.getById(created.id);
       try {
-        await emailService.sendEntrada(created);
+        await emailService.sendEntrada(hydrated);
       } catch (e) {
         console.warn("Falha ao disparar e-mail de entrada de NE:", e);
       }
@@ -174,8 +175,10 @@ export class CommitmentNoteService {
         finalizada: true,
         dataFinalizacao: new Date(),
       });
+      // Recarregar a NE com relações (supplier) antes do envio
+      const hydrated = await repository.getById(id);
       try {
-        await emailService.sendFinalizacao(updated);
+        await emailService.sendFinalizacao(hydrated);
       } catch (e) {
         console.warn("Falha ao disparar e-mail de finalização de NE:", e);
       }
