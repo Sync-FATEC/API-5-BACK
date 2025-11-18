@@ -77,7 +77,9 @@ AppDataSource.initialize()
       const orderScheduler = new OrderScheduler();
       orderScheduler.startScheduler(15);
       const neScheduler = new CommitmentNoteScheduler();
-      const neInterval = Number(process.env.NE_SCHEDULER_INTERVAL_MINUTES || 60);
+      const rawInterval = process.env.NE_SCHEDULER_INTERVAL_MINUTES;
+      const parsed = Number(rawInterval);
+      const neInterval = Number.isFinite(parsed) && parsed > 0 ? parsed : 60;
       neScheduler.startScheduler(neInterval);
     });
   })

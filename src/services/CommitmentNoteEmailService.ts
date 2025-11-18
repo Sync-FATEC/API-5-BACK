@@ -2,6 +2,7 @@ import { CommitmentNote } from '../database/entities/CommitmentNote';
 import { NotificationService } from './NotificationService';
 import { EmailLogService } from './EmailLogService';
 import { EmailTemplateRepository } from '../repository/EmailTemplateRepository';
+import { EmailTemplateService } from './EmailTemplateService';
 import { EmailType } from '../database/enums/EmailType';
 import { CommitmentNotePdfService } from './CommitmentNotePdfService';
 import { Supplier } from '../database/entities/Supplier';
@@ -10,6 +11,7 @@ const notifier = new NotificationService();
 const logger = new EmailLogService();
 const templates = new EmailTemplateRepository();
 const pdfService = new CommitmentNotePdfService();
+const templateService = new EmailTemplateService();
 
 function pickResponsavel(note: CommitmentNote): { nome: string; cargo: string } {
   const nome = note.nomeResponsavelManual && note.nomeResponsavelManual.trim().length > 0 && note.nomeResponsavelManualOverride
@@ -48,17 +50,20 @@ export class CommitmentNoteEmailService {
     const tpl = await templates.getByType(EmailType.ENTRADA);
     const subject = tpl?.subject || `Entrada de Nota de Empenho ${note.numeroNota}`;
     const rodape = tpl?.footer || '';
-    const bodyData = {
-      numeroNota: note.numeroNota,
-      ug: note.ug,
-      dataNota: new Date(note.dataNota).toLocaleDateString(),
-      razaoSocial: note.razaoSocial,
-      cnpj: note.cnpj,
-      responsavelNome: nome,
-      responsavelCargo: cargo,
-      rodapeInstitucional: rodape,
-    };
-    const html = tpl?.html ? renderTemplate(tpl.html, bodyData) : `
+    const vars = {
+      NUMERO_NE: note.numeroNota,
+      DATA_NE: new Date(note.dataNota).toLocaleDateString(),
+      UG: note.ug,
+      RAZAO_SOCIAL: note.razaoSocial,
+      CNPJ: note.cnpj,
+      NOME_RESPONSAVEL: nome,
+      CARGO_RESPONSAVEL: cargo,
+      DATA_PREVISTA: new Date(note.dataPrevistaEntrega).toLocaleDateString(),
+      FREQUENCIA: String(note.frequenciaCobrancaDias ?? 15),
+      URGENCIA: note.urgencia || '',
+    } as Record<string, string>;
+    const rendered = tpl ? await templateService.renderByName(EmailType.ENTRADA, vars as any) : null;
+    const html = rendered?.html ?? `
       <p>Prezado fornecedor,</p>
       <p>Foi registrada a Nota de Empenho <strong>${note.numeroNota}</strong>.</p>
       <ul>
@@ -94,21 +99,27 @@ export class CommitmentNoteEmailService {
     const tpl = await templates.getByType(EmailType.COBRANCA);
     const subject = tpl?.subject || `Cobrança NE ${note.numeroNota}`;
     const rodape = tpl?.footer || '';
-    const htmlBase = tpl?.html || `
+    const vars = {
+      NUMERO_NE: note.numeroNota,
+      UG: note.ug,
+      RAZAO_SOCIAL: note.razaoSocial,
+      CNPJ: note.cnpj,
+      DATA_PREVISTA: new Date(note.dataPrevistaEntrega).toLocaleDateString(),
+      FREQUENCIA: String(note.frequenciaCobrancaDias ?? 15),
+      URGENCIA: note.urgencia || '',
+      NOME_RESPONSAVEL: note.cargoResponsavel ? '' : '',
+      CARGO_RESPONSAVEL: note.cargoResponsavel || '',
+      HISTORICO_COBRANCAS: historico,
+    } as any;
+    const rendered = tpl ? await templateService.renderByName(EmailType.COBRANCA, vars as any) : null;
+    const htmlBase = rendered?.html || `
       <p>Prezado fornecedor,</p>
       <p>Estamos reforçando a cobrança referente à Nota de Empenho <strong>${note.numeroNota}</strong>.</p>
       <p>Histórico:</p>
       <div>${historico}</div>
       <p>${rodape}</p>
     `;
-    const html = renderTemplate(htmlBase, {
-      numeroNota: note.numeroNota,
-      ug: note.ug,
-      razaoSocial: note.razaoSocial,
-      cnpj: note.cnpj,
-      historicoCobrancas: historico,
-      rodapeInstitucional: rodape,
-    });
+    const html = htmlBase;
     const contentHash = EmailLogService.makeHash(subject, html);
     const res = await notifier.sendEmail(emails.primary, subject, html, { html, cc: emails.secondary });
     await logger.log({
@@ -132,17 +143,20 @@ export class CommitmentNoteEmailService {
     const subject = tpl?.subject || `Finalização NE ${note.numeroNota}`;
     const rodape = tpl?.footer || '';
     const resumo = `NE ${note.numeroNota} finalizada em ${note.dataFinalizacao ? new Date(note.dataFinalizacao).toLocaleString() : ''}.`;
-    const htmlBase = tpl?.html || `
+    const vars = {
+      NUMERO_NE: note.numeroNota,
+      RAZAO_SOCIAL: note.razaoSocial,
+      CNPJ: note.cnpj,
+      DATA_NE: new Date(note.dataNota).toLocaleDateString(),
+      UG: note.ug,
+    } as any;
+    const rendered = tpl ? await templateService.renderByName(EmailType.FINALIZACAO, vars as any) : null;
+    const htmlBase = rendered?.html || `
       <p>Prezado fornecedor,</p>
       <p>${resumo}</p>
       <p>${rodape}</p>
     `;
-    const html = renderTemplate(htmlBase, {
-      numeroNota: note.numeroNota,
-      razaoSocial: note.razaoSocial,
-      cnpj: note.cnpj,
-      rodapeInstitucional: rodape,
-    });
+    const html = htmlBase;
     const pdf = await pdfService.generateFinalizationReceipt(note);
     const attachments = [{ filename: `Encerramento-NE-${note.numeroNota}.pdf`, content: pdf, contentType: 'application/pdf' }];
     const contentHash = EmailLogService.makeHash(subject, html, attachments);
