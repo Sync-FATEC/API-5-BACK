@@ -41,6 +41,38 @@ export class UserController {
         }
     }
 
+    async createAdmin(req: Request, res: Response, next: NextFunction) {
+        try {
+            const users = req.body.users;
+
+            if (!users || !Array.isArray(users) || users.length === 0) {
+                throw new SystemError("Lista de usuários é obrigatória");
+            }
+
+            for (const user of users) {
+                if (!user.name || !user.email || !user.role) {
+                    throw new SystemError("Dados incompletos em um ou mais usuários");
+                }
+            }
+
+            const userTypes = users.map(user => ({
+                email: user.email,
+                name: user.name,
+                role: user.role,
+            } as UsersType));
+
+            await Promise.all(userTypes.map(userType => userServices.createUser(userType)));
+
+            res.status(201).json({
+                success: true,
+                data: userTypes,
+                message: "Usuários criados com sucesso"
+            });
+        } catch (error) {
+            next(error);
+        }
+    }
+
     async login(req: Request, res: Response, next: NextFunction) {
         try {
             const { email, password } = req.body;
