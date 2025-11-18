@@ -19,7 +19,8 @@ function pickResponsavel(note: CommitmentNote): { nome: string; cargo: string } 
   return { nome, cargo };
 }
 
-function ensureSupplierEmails(supplier: Supplier): { primary: string; secondary?: string } {
+function ensureSupplierEmails(supplier?: Supplier): { primary: string; secondary?: string } {
+  if (!supplier) throw new Error('Fornecedor não carregado na NE');
   if (!supplier.emailPrimario) throw new Error('Fornecedor sem e-mail primário');
   return { primary: supplier.emailPrimario, secondary: supplier.emailSecundario || undefined };
 }
