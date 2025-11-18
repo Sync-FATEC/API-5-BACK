@@ -8,7 +8,16 @@ const repository = new CommitmentNoteRepository();
 const emailService = new CommitmentNoteEmailService();
 
 function toDate(value: string | Date): Date {
-  return value instanceof Date ? value : new Date(value);
+  if (value instanceof Date) return value;
+  const s = String(value);
+  const m = s.match(/^([0-9]{4})-([0-9]{2})-([0-9]{2})$/);
+  if (m) {
+    const y = Number(m[1]);
+    const mo = Number(m[2]) - 1;
+    const d = Number(m[3]);
+    return new Date(y, mo, d);
+  }
+  return new Date(s);
 }
 
 function diffDays(from: Date, to: Date): number {
