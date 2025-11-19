@@ -45,7 +45,30 @@ const swaggerSpec = swaggerJsdoc(swaggerOptions);
 
 const app = express();
 app.use(cors());
-app.use(express.json());
+
+// Custom middleware to skip body parsing for multipart requests
+app.use((req, res, next) => {
+  const contentType = req.headers['content-type'] || '';
+  
+  console.log(`📝 [BODY_PARSER_MIDDLEWARE] ${req.method} ${req.path} - Content-Type: ${contentType}`);
+  
+  if (contentType.includes('multipart/form-data')) {
+    console.log(`   → Pulando body parser (deixando multer processar)`);
+    return next();
+  }
+  
+  // For other content types, use standard parsing
+  if (contentType.includes('application/json') || contentType === '') {
+    console.log(`   → Aplicando JSON parser`);
+    express.json({ limit: '10mb' })(req, res, next);
+  } else {
+    console.log(`   → Aplicando URL-encoded parser`);
+    express.urlencoded({ limit: '10mb', extended: true })(req, res, next);
+  }
+});
+
+// Servir arquivos estáticos (uploads)
+app.use(express.static('uploads'));
 
 // Swagger route
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
@@ -54,13 +77,13 @@ app.use("/auth", authRouter);
 app.use(authMiddleware);
 
 // Rotas protegidas por autenticação
+app.use("/commitment-notes", commitmentNoteRouter);
 app.use("/sections", sectionRouter);
 app.use("/orders", orderRouter);
 app.use("/merchandise", merchandiseRouter);
 app.use("/merchandise-types", merchandiseTypeRouter);
 app.use("/stocks", stockRouter);
 app.use("/suppliers", supplierRouter);
-app.use("/commitment-notes", commitmentNoteRouter);
 app.use("/reports", reportRouter);
 app.use("/exam-types", examTypeRouter);
 app.use("/exam-preparations", examPreparationRouter);

@@ -10,7 +10,47 @@ export class CommitmentNoteController {
     try {
       const role: RoleEnum | undefined = req.user?.userData?.role as RoleEnum | undefined;
       if (!role) throw new SystemError("Permissão negada");
-      const created = await service.create(req.body, role);
+      
+      let pdfFile: { buffer: Buffer; originalname: string } | undefined = undefined;
+      
+      // Opção 1: PDF vindo do multer (multipart/form-data)
+      const multerFile = (req as any).file;
+      if (multerFile) {
+        pdfFile = {
+          buffer: multerFile.buffer,
+          originalname: multerFile.originalname
+        };
+        console.log(`📁 [Controller] PDF recebido via multer: ${multerFile.originalname}`);
+      }
+      
+      // Opção 2: PDF vindo do JSON body (base64)
+      if (!pdfFile && req.body?.pdfFile) {
+        const pdfData = req.body.pdfFile;
+        const pdfFileName = req.body.pdfFileName || 'documento.pdf';
+        
+        // Se for string base64
+        if (typeof pdfData === 'string') {
+          try {
+            const buffer = Buffer.from(pdfData, 'base64');
+            pdfFile = {
+              buffer,
+              originalname: pdfFileName
+            };
+            console.log(`📁 [Controller] PDF recebido via JSON base64: ${pdfFileName} (${buffer.length} bytes)`);
+          } catch (error) {
+            console.warn(`⚠️ Falha ao decodificar base64:`, (error as any).message);
+          }
+        }
+      }
+      
+      console.log(`\n📝 === CommitmentNoteController.create ===`);
+      console.log(`   Arquivo recebido: ${pdfFile ? 'SIM' : 'NÃO'}`);
+      if (pdfFile) {
+        console.log(`   - Nome: ${pdfFile.originalname}`);
+        console.log(`   - Tamanho: ${pdfFile.buffer.length} bytes`);
+      }
+      
+      const created = await service.create(req.body, role, pdfFile);
       res.status(201).json({ success: true, data: created, message: "Nota de Empenho criada com sucesso" });
     } catch (error) {
       next(error);

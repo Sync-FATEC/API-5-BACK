@@ -28,10 +28,17 @@ function diffDays(from: Date, to: Date): number {
 }
 
 export class CommitmentNoteService {
-  async create(dto: CommitmentNoteCreateDTO, userRole: RoleEnum) {
+  async create(dto: CommitmentNoteCreateDTO, userRole: RoleEnum, pdfFile?: { buffer: Buffer; originalname: string }) {
     try {
       if (userRole !== RoleEnum.ADMIN) {
         throw new SystemError("Apenas administradores podem cadastrar notas de empenho");
+      }
+
+      console.log(`\n📋 === CommitmentNoteService.create ===`);
+      console.log(`   pdfFile recebido: ${pdfFile ? 'SIM' : 'NÃO'}`);
+      if (pdfFile) {
+        console.log(`   - Nome: ${pdfFile.originalname}`);
+        console.log(`   - Tamanho: ${pdfFile.buffer.length} bytes`);
       }
 
       if (!dto.supplierId) throw new SystemError("Fornecedor (supplierId) é obrigatório");
@@ -46,6 +53,16 @@ export class CommitmentNoteService {
       const dataPrevistaEntrega = dto.dataPrevistaEntrega ? toDate(dto.dataPrevistaEntrega) : new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
 
       const diasParaEntrega = diffDays(now, dataPrevistaEntrega);
+
+      // Preparar informações do PDF se fornecido
+      let pdfFileUrl: string | undefined = undefined;
+      let pdfFileName: string | undefined = undefined;
+      if (pdfFile) {
+        const timestamp = Date.now();
+        pdfFileUrl = `/uploads/commitment-notes/${dto.numeroNota}-${timestamp}.pdf`;
+        pdfFileName = pdfFile.originalname;
+        console.log(`📁 PDF será salvo em: ${pdfFileUrl}`);
+      }
 
       const entityData = {
         supplierId: dto.supplierId,
@@ -66,9 +83,34 @@ export class CommitmentNoteService {
         diasAtraso: diasParaEntrega < 0 ? Math.abs(diasParaEntrega) : 0,
         atrasado: diasParaEntrega < 0,
         isActive: true,
+        pdfFileUrl,
+        pdfFileName,
       };
 
       const created = await repository.create(entityData);
+      
+      // Salvar arquivo PDF se fornecido
+      if (pdfFile && pdfFileUrl) {
+        try {
+          const fs = require('fs');
+          const path = require('path');
+          const uploadsDir = path.join(process.cwd(), 'uploads', 'commitment-notes');
+          if (!fs.existsSync(uploadsDir)) {
+            fs.mkdirSync(uploadsDir, { recursive: true });
+          }
+          // Extrair o nome do arquivo da URL
+          const fileName = pdfFileUrl.split('/').pop();
+          const filePath = path.join(uploadsDir, fileName);
+          fs.writeFileSync(filePath, pdfFile.buffer);
+          console.log(`   ✅ PDF salvo em: ${filePath}`);
+          console.log(`   📊 Tamanho: ${pdfFile.buffer.length} bytes`);
+        } catch (e) {
+          console.error(`   ❌ Falha ao salvar PDF:`, e);
+        }
+      } else {
+        console.log(`   📄 Sem PDF para salvar (pdfFile=${!!pdfFile}, pdfFileUrl=${pdfFileUrl})`);
+      }
+      
       const hydrated = await repository.getById(created.id);
       try {
         await emailService.sendEntrada(hydrated);
