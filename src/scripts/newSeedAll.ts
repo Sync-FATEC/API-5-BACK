@@ -1371,22 +1371,43 @@ async function seedExamPreparations(examTypes: any[]) {
 async function seedEmailTemplates() {
   console.log("=== Criando Templates de E-mail ===");
   const created: any[] = [];
-  try {
-    const html = readFileSync(join(__dirname, "..", "templates", "email", "BaseNE.html"), "utf8");
+
+  const templates = [
+    {
+      type: "entrada" as any,
+      subject: "Solicitação de entrega de materiais por Nota de Empenho",
+      filename: "entradaNE.html",
+    },
+    {
+      type: "cobranca" as any,
+      subject: "Cobrança de entrega de materiais por Nota de Empenho",
+      filename: "cobrancaNE.html",
+    },
+    {
+      type: "finalizacao" as any,
+      subject: "Finalização da entrega de materiais por Nota de Empenho",
+      filename: "finalizacaoNE.html",
+    },
+  ];
+
+  for (const template of templates) {
     try {
-      const tpl = await emailTemplateService.upsert("cobranca" as any, "Solicitação de entrega por NE {NUMERO_NE}", html);
-      created.push(tpl);
-      console.log("Template upsert: tipo=cobranca");
-    } catch (e) {
-      const list = await emailTemplateService.list();
-      const existing = list.find((x: any) => x.type === "cobranca");
-      if (existing) {
-        created.push(existing);
-        console.log("Template existente: tipo=cobranca");
+      const html = readFileSync(join(__dirname, "..", "templates", "email", template.filename), "utf8");
+      try {
+        const tpl = await emailTemplateService.upsert(template.type, template.subject, html);
+        created.push(tpl);
+        console.log(`Template upsert: tipo=${template.type}`);
+      } catch (e) {
+        const list = await emailTemplateService.list();
+        const existing = list.find((x: any) => x.type === template.type);
+        if (existing) {
+          created.push(existing);
+          console.log(`Template existente: tipo=${template.type}`);
+        }
       }
+    } catch (error) {
+      console.error(`Erro ao carregar ${template.filename} para seed:`, error);
     }
-  } catch (error) {
-    console.error("Erro ao carregar BaseNE.html para seed:", error);
   }
 
   console.log(`${created.length} templates de e-mail criados/validados.`);

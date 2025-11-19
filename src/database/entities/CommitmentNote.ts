@@ -86,4 +86,10 @@ export class CommitmentNote {
 
   @Column({ type: 'timestamp', nullable: true })
   dataFinalizacao?: Date;
+
+  @Column({ type: 'varchar', length: 500, nullable: true })
+  pdfFileUrl?: string;
+
+  @Column({ type: 'varchar', length: 255, nullable: true })
+  pdfFileName?: string;
 }
