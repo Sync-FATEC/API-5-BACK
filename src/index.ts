@@ -50,19 +50,14 @@ app.use(cors());
 app.use((req, res, next) => {
   const contentType = req.headers['content-type'] || '';
   
-  console.log(`📝 [BODY_PARSER_MIDDLEWARE] ${req.method} ${req.path} - Content-Type: ${contentType}`);
-  
   if (contentType.includes('multipart/form-data')) {
-    console.log(`   → Pulando body parser (deixando multer processar)`);
     return next();
   }
   
   // For other content types, use standard parsing
   if (contentType.includes('application/json') || contentType === '') {
-    console.log(`   → Aplicando JSON parser`);
     express.json({ limit: '10mb' })(req, res, next);
   } else {
-    console.log(`   → Aplicando URL-encoded parser`);
     express.urlencoded({ limit: '10mb', extended: true })(req, res, next);
   }
 });

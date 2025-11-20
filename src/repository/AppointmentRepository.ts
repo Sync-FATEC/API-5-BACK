@@ -41,11 +41,13 @@ export class AppointmentRepository {
     }
 
     const created = repository.create({ ...data });
-    return repository.save(created);
+    const saved = await repository.save(created);
+    // Recarregar com as relações
+    return repository.findOne({ where: { id: saved.id }, relations: ['examType'] }) as any;
   }
 
   async list(filters: { start?: Date; end?: Date; pacienteId?: string; examTypeId?: string; status?: AppointmentStatus }) {
-    const qb = repository.createQueryBuilder('a');
+    const qb = repository.createQueryBuilder('a').leftJoinAndSelect('a.examType', 'examType');
     if (filters.pacienteId) qb.andWhere('a.pacienteId = :pacienteId', { pacienteId: filters.pacienteId });
     if (filters.examTypeId) qb.andWhere('a.examTypeId = :examTypeId', { examTypeId: filters.examTypeId });
     if (filters.status) qb.andWhere('a.status = :status', { status: filters.status });
@@ -56,7 +58,7 @@ export class AppointmentRepository {
   }
 
   async findById(id: string) {
-    const found = await repository.findOne({ where: { id } });
+    const found = await repository.findOne({ where: { id }, relations: ['examType'] });
     if (!found) throw new SystemError("Agendamento não encontrado");
     return found;
   }
@@ -64,12 +66,16 @@ export class AppointmentRepository {
   async update(id: string, data: Partial<Appointment>) {
     const entity = await this.findById(id);
     Object.assign(entity, data);
-    return repository.save(entity);
+    await repository.save(entity);
+    // Recarregar com as relações
+    return repository.findOne({ where: { id }, relations: ['examType'] }) as any;
   }
 
   async cancel(id: string) {
     const entity = await this.findById(id);
     entity.status = AppointmentStatus.CANCELADO;
-    return repository.save(entity);
+    await repository.save(entity);
+    // Recarregar com as relações
+    return repository.findOne({ where: { id }, relations: ['examType'] }) as any;
   }
 }
