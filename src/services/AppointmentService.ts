@@ -4,7 +4,7 @@ import { SchedulerUtils } from "../utils/SchedulerUtils";
 import { AppointmentStatus } from "../database/enums/AppointmentStatus";
 import { UsersRepository } from "../repository/UsersRepository";
 import { NotificationService } from "./NotificationService";
-import { appointmentScheduledTemplate, appointmentReminderTemplate, appointmentReadyTemplate, appointmentCanceledTemplate } from "../templates/email/AppointmentTemplates";
+import { appointmentScheduledTemplate, appointmentReminderTemplate, appointmentReadyTemplate, appointmentCanceledTemplate, appointmentCompletedTemplate } from "../templates/email/AppointmentTemplates";
 import { NotificationEvent } from "../database/entities/NotificationLog";
 import { AppDataSource } from "../database/data-source";
 import { Appointment } from "../database/entities/Appointment";
@@ -28,22 +28,21 @@ export class AppointmentService {
       retiradaDate = r;
     }
     const created = await repo.create({ pacienteId, examTypeId, dataHora: date, observacoes, dataRetirada: retiradaDate });
-    // Notificar paciente (e-mail)
+    // Notificar paciente com email de confirmação do agendamento
     const paciente = await usersRepo.getById(pacienteId);
     if (paciente?.email) {
+      // Carregar exam type para obter as instruções
+      const examTypeRepo = AppDataSource.getRepository(ExamType);
+      const examType = await examTypeRepo.findOne({ where: { id: examTypeId } });
+    
       const html = appointmentScheduledTemplate({
         pacienteNome: paciente.name ?? paciente.email ?? 'Paciente',
-        examNome: created.examType?.nome ?? created.examTypeId,
-        dataHora: created.dataHora.toLocaleString(),
-        instrucoes: created.examType?.preparoNecessario ?? undefined,
+        examNome: examType?.nome ?? created.examType?.nome ?? examTypeId,
+        dataHora: created.dataHora.toLocaleString('pt-BR'),
+        instrucoes: examType?.preparoNecessario ?? created.examType?.preparoNecessario ?? undefined,
       });
-      const text = `Seu agendamento foi confirmado para ${created.dataHora.toLocaleString()}.`;
-      await notifier.sendEmail(paciente.email, 'Confirmação de Agendamento', text, { html, meta: { appointmentId: created.id, event: NotificationEvent.SCHEDULED } });
-      // Notificação por SMS (opcional via env de teste)
-      const smsTo = process.env.APPOINTMENT_SMS_TEST_TO;
-      if (smsTo) {
-        await notifier.sendSMS(smsTo, text, { appointmentId: created.id, event: NotificationEvent.SCHEDULED });
-      }
+      const text = `Seu agendamento foi confirmado para ${created.dataHora.toLocaleString('pt-BR')}.`;
+      await notifier.sendEmail(paciente.email, 'Agendamento Confirmado', text, { html, meta: { appointmentId: created.id, event: NotificationEvent.SCHEDULED } });
     }
     return created;
   }
@@ -145,42 +144,73 @@ export class AppointmentService {
     }
 
     const updated = await repo.update(id, payload);
+    const paciente = await usersRepo.getById(updated.pacienteId);
+    const email = paciente?.email;
+    
     // Disparo em tempo real na mudança de status
     if (data.status && data.status !== current.status) {
-      const paciente = await usersRepo.getById(updated.pacienteId);
-      const email = paciente?.email;
       if (email) {
         if (data.status === AppointmentStatus.REALIZADO) {
-          const html = appointmentReadyTemplate({
+          const html = appointmentCompletedTemplate({
             pacienteNome: paciente.name ?? email,
             examNome: updated.examType?.nome ?? updated.examTypeId,
-            retiradaInfo: 'Retire seu resultado na recepção da clínica, com documento de identificação.',
+            dataRealizacao: updated.dataHora.toLocaleDateString('pt-BR'),
+            horaRealizacao: updated.dataHora.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
           });
-          await notifier.sendEmail(email, 'Resultado de Exame Disponível', 'Seu resultado está disponível para retirada.', { html, meta: { appointmentId: updated.id, event: NotificationEvent.READY } });
+          await notifier.sendEmail(email, 'Exame Realizado', 'Seu exame foi realizado com sucesso!', { html, meta: { appointmentId: updated.id, event: NotificationEvent.COMPLETED } });
         } else if (data.status === AppointmentStatus.AGENDADO) {
           const html = appointmentScheduledTemplate({
             pacienteNome: paciente.name ?? email,
             examNome: updated.examType?.nome ?? updated.examTypeId,
-            dataHora: updated.dataHora.toLocaleString(),
+            dataHora: updated.dataHora.toLocaleString('pt-BR'),
             instrucoes: updated.examType?.preparoNecessario ?? undefined,
           });
-          await notifier.sendEmail(email, 'Agendamento Atualizado', 'Seu agendamento foi atualizado.', { html, meta: { appointmentId: updated.id, event: NotificationEvent.SCHEDULED } });
+          await notifier.sendEmail(email, 'Agendamento Confirmado', 'Seu agendamento foi confirmado.', { html, meta: { appointmentId: updated.id, event: NotificationEvent.SCHEDULED } });
+        } else if (data.status === AppointmentStatus.CANCELADO) {
+          const html = appointmentCanceledTemplate({
+            pacienteNome: paciente.name ?? email,
+            examNome: updated.examType?.nome ?? updated.examTypeId,
+            dataHora: updated.dataHora.toLocaleString('pt-BR'),
+          });
+          await notifier.sendEmail(email, 'Agendamento Cancelado', 'Seu agendamento foi cancelado.', { html, meta: { appointmentId: updated.id, event: NotificationEvent.CANCELED } });
         }
       }
     }
+
+    // Disparo quando data de retirada é preenchida
+    if (data.dataRetirada && email) {
+      const dataRetiradaAtual = current.dataRetirada?.toISOString().split('T')[0];
+      const dataRetiradaNova = typeof data.dataRetirada === 'string' ? data.dataRetirada : new Date(data.dataRetirada).toISOString().split('T')[0];
+      
+      if (dataRetiradaAtual !== dataRetiradaNova) {
+        const retiradaDate = new Date(data.dataRetirada);
+        const dataFormatada = retiradaDate.toLocaleDateString('pt-BR');
+        const horaFormatada = retiradaDate.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+        const dataHoraRetirada = `${dataFormatada} às ${horaFormatada}`;
+        
+        const html = appointmentReadyTemplate({
+          pacienteNome: paciente.name ?? email,
+          examNome: updated.examType?.nome ?? updated.examTypeId,
+          retiradaInfo: `Retire seu resultado em ${retiradaDate.toLocaleDateString('pt-BR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}, na recepção da clínica com documento de identificação.`,
+          dataHoraRetirada: dataHoraRetirada,
+        });
+        await notifier.sendEmail(email, 'Data de Retirada Agendada', 'A data de retirada do seu resultado foi agendada.', { html, meta: { appointmentId: updated.id, event: NotificationEvent.READY } });
+      }
+    }
+    
     return updated;
   }
 
   async cancel(id: string) {
     const canceled = await repo.cancel(id);
     const paciente = await usersRepo.getById(canceled.pacienteId);
-    const email = paciente?.email;
-    if (email) {
+    if (paciente?.email) {
       const html = appointmentCanceledTemplate({
-        pacienteNome: paciente.name ?? email,
+        pacienteNome: paciente.name ?? paciente.email,
         examNome: canceled.examType?.nome ?? canceled.examTypeId,
+        dataHora: canceled.dataHora.toLocaleString('pt-BR'),
       });
-      await notifier.sendEmail(email, 'Agendamento Cancelado', 'Seu agendamento foi cancelado.', { html, meta: { appointmentId: canceled.id, event: NotificationEvent.CANCELED } });
+      await notifier.sendEmail(paciente.email, 'Agendamento Cancelado', 'Seu agendamento foi cancelado.', { html, meta: { appointmentId: canceled.id, event: NotificationEvent.CANCELED } });
     }
     return canceled;
   }

@@ -3,6 +3,8 @@ import { CommitmentNoteRepository } from "../repository/CommitmentNoteRepository
 import { CommitmentNoteCreateDTO, CommitmentNoteUpdateDTO, CommitmentNoteAdminUpdateDTO } from "../types/CommitmentNoteType";
 import { RoleEnum } from "../database/enums/RoleEnum";
 import { CommitmentNoteEmailService } from "./CommitmentNoteEmailService";
+import { AppDataSource } from "../database/data-source";
+import { EmailLog } from "../database/entities/EmailLog";
 
 const repository = new CommitmentNoteRepository();
 const emailService = new CommitmentNoteEmailService();
@@ -34,7 +36,6 @@ export class CommitmentNoteService {
         throw new SystemError("Apenas administradores podem cadastrar notas de empenho");
       }
 
-      console.log(`\n📋 === CommitmentNoteService.create ===`);
       console.log(`   pdfFile recebido: ${pdfFile ? 'SIM' : 'NÃO'}`);
       if (pdfFile) {
         console.log(`   - Nome: ${pdfFile.originalname}`);
@@ -61,7 +62,6 @@ export class CommitmentNoteService {
         const timestamp = Date.now();
         pdfFileUrl = `/uploads/commitment-notes/${dto.numeroNota}-${timestamp}.pdf`;
         pdfFileName = pdfFile.originalname;
-        console.log(`📁 PDF será salvo em: ${pdfFileUrl}`);
       }
 
       const entityData = {
@@ -102,13 +102,9 @@ export class CommitmentNoteService {
           const fileName = pdfFileUrl.split('/').pop();
           const filePath = path.join(uploadsDir, fileName);
           fs.writeFileSync(filePath, pdfFile.buffer);
-          console.log(`   ✅ PDF salvo em: ${filePath}`);
-          console.log(`   📊 Tamanho: ${pdfFile.buffer.length} bytes`);
         } catch (e) {
-          console.error(`   ❌ Falha ao salvar PDF:`, e);
+          console.error(`Falha ao salvar PDF:`, e);
         }
-      } else {
-        console.log(`   📄 Sem PDF para salvar (pdfFile=${!!pdfFile}, pdfFileUrl=${pdfFileUrl})`);
       }
       
       const hydrated = await repository.getById(created.id);
@@ -245,6 +241,10 @@ export class CommitmentNoteService {
       if (userRole !== RoleEnum.ADMIN) {
         throw new SystemError("Apenas administradores podem excluir notas de empenho");
       }
+      // Primeiro, deletar os logs de email associados à nota
+      const emailLogRepo = AppDataSource.getRepository(EmailLog);
+      await emailLogRepo.delete({ commitmentNoteId: id });
+      // Depois, deletar a nota de empenho
       await repository.delete(id);
       return { success: true, message: "Nota de Empenho removida com sucesso" };
     } catch (error) {

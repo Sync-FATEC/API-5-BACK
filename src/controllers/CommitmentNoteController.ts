@@ -20,7 +20,6 @@ export class CommitmentNoteController {
           buffer: multerFile.buffer,
           originalname: multerFile.originalname
         };
-        console.log(`📁 [Controller] PDF recebido via multer: ${multerFile.originalname}`);
       }
       
       // Opção 2: PDF vindo do JSON body (base64)
@@ -36,19 +35,12 @@ export class CommitmentNoteController {
               buffer,
               originalname: pdfFileName
             };
-            console.log(`📁 [Controller] PDF recebido via JSON base64: ${pdfFileName} (${buffer.length} bytes)`);
           } catch (error) {
-            console.warn(`⚠️ Falha ao decodificar base64:`, (error as any).message);
+            // Falha ao decodificar base64
           }
         }
       }
-      
-      console.log(`\n📝 === CommitmentNoteController.create ===`);
-      console.log(`   Arquivo recebido: ${pdfFile ? 'SIM' : 'NÃO'}`);
-      if (pdfFile) {
-        console.log(`   - Nome: ${pdfFile.originalname}`);
-        console.log(`   - Tamanho: ${pdfFile.buffer.length} bytes`);
-      }
+    
       
       const created = await service.create(req.body, role, pdfFile);
       res.status(201).json({ success: true, data: created, message: "Nota de Empenho criada com sucesso" });

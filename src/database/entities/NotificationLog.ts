@@ -8,6 +8,7 @@ export enum NotificationChannel {
 export enum NotificationEvent {
   SCHEDULED = 'SCHEDULED',
   REMINDER = 'REMINDER',
+  COMPLETED = 'COMPLETED',
   READY = 'READY',
   CANCELED = 'CANCELED',
 }

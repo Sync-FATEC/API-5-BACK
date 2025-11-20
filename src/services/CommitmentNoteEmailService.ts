@@ -78,29 +78,20 @@ export class CommitmentNoteEmailService {
       <p>${rodape}</p>
     `;
     let pdf: Buffer;
-    console.log(`\n🔍 DEBUG sendEntrada - NE ${note.numeroNota}`);
-    console.log(`   pdfFileUrl: ${note.pdfFileUrl || 'NÃO DEFINIDO'}`);
-    console.log(`   pdfFileName: ${note.pdfFileName || 'NÃO DEFINIDO'}`);
     
     if (note.pdfFileUrl) {
       try {
         const filePath = resolve(process.cwd(), note.pdfFileUrl.replace(/^\//, ''));
-        console.log(`   Tentando carregar de: ${filePath}`);
         
         if (!existsSync(filePath)) {
-          console.error(`   ❌ Arquivo NÃO EXISTE no caminho!`);
           throw new Error(`Arquivo não encontrado: ${filePath}`);
         }
         
         pdf = readFileSync(filePath);
-        console.log(`   ✅ PDF enviado carregado com sucesso! Tamanho: ${pdf.length} bytes`);
       } catch (error) {
-        console.error(`   ❌ Erro ao carregar PDF enviado:`, error);
-        console.warn(`   ⚠️ Gerando PDF automaticamente como fallback...`);
         pdf = await pdfService.generateCommitmentNotePdf(note);
       }
     } else {
-      console.log(`   📄 Sem pdfFileUrl - gerando PDF automaticamente`);
       pdf = await pdfService.generateCommitmentNotePdf(note);
     }
     const attachments = [{ filename: note.pdfFileName || `NE-${note.numeroNota}.pdf`, content: pdf, contentType: 'application/pdf' }];
@@ -147,8 +138,34 @@ export class CommitmentNoteEmailService {
       <p>${rodape}</p>
     `;
     const html = htmlBase;
-    const contentHash = EmailLogService.makeHash(subject, html);
-    const res = await notifier.sendEmail(emails.primary, subject, html, { html, cc: emails.secondary });
+    
+    let pdf: Buffer;
+    
+    if (note.pdfFileUrl) {
+      try {
+        const filePath = resolve(process.cwd(), note.pdfFileUrl.replace(/^\//, ''));
+        console.log(`   Tentando carregar de: ${filePath}`);
+        
+        if (!existsSync(filePath)) {
+          console.error(`   ❌ Arquivo NÃO EXISTE no caminho!`);
+          throw new Error(`Arquivo não encontrado: ${filePath}`);
+        }
+        
+        pdf = readFileSync(filePath);
+        console.log(`   ✅ PDF enviado carregado com sucesso! Tamanho: ${pdf.length} bytes`);
+      } catch (error) {
+        console.error(`   ❌ Erro ao carregar PDF enviado:`, error);
+        console.warn(`   ⚠️ Gerando PDF automaticamente como fallback...`);
+        pdf = await pdfService.generateFinalizationReceipt(note);
+      }
+    } else {
+      console.log(`   📄 Sem pdfFileUrl - gerando PDF automaticamente`);
+      pdf = await pdfService.generateFinalizationReceipt(note);
+    }
+    
+    const attachments = [{ filename: note.pdfFileName || `NE-${note.numeroNota}.pdf`, content: pdf, contentType: 'application/pdf' }];
+    const contentHash = EmailLogService.makeHash(subject, html, attachments);
+    const res = await notifier.sendEmail(emails.primary, subject, html, { html, cc: emails.secondary, attachments });
     await logger.log({
       commitmentNoteId: note.id,
       supplierId: note.supplierId,
@@ -185,9 +202,6 @@ export class CommitmentNoteEmailService {
     `;
     const html = htmlBase;
     let pdf: Buffer;
-    console.log(`\n🔍 DEBUG sendFinalizacao - NE ${note.numeroNota}`);
-    console.log(`   pdfFileUrl: ${note.pdfFileUrl || 'NÃO DEFINIDO'}`);
-    console.log(`   pdfFileName: ${note.pdfFileName || 'NÃO DEFINIDO'}`);
     
     if (note.pdfFileUrl) {
       try {

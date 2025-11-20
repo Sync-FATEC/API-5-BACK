@@ -9,7 +9,6 @@ const controller = new CommitmentNoteController();
 const upload = multer({
   storage: multer.memoryStorage(),
   fileFilter: (req: any, file: any, cb: any) => {
-    console.log(`📝 Multer fileFilter - file: ${file.fieldname}, mimetype: ${file.mimetype}`);
     if (file.mimetype === 'application/pdf') {
       cb(null, true);
     } else {
@@ -119,17 +118,11 @@ router.get('/:id', (req, res, next) => controller.getById(req, res, next));
 router.post('/', (req, res, next) => {
   const contentType = req.headers['content-type'] || '';
   
-  console.log(`📝 [POST /commitment-notes] Content-Type: ${contentType}`);
-  
   // Se for multipart/form-data, usar multer
   if (contentType.includes('multipart/form-data')) {
-    console.log(`   → Processando como multipart/form-data (multer)`);
     upload.single('pdfFile')(req, res, (err) => {
-      console.log(`📝 [DEPOIS MULTER] req.file:`, req.file ? `EXISTS - ${req.file.originalname}` : 'UNDEFINED');
-      console.log(`📝 [DEPOIS MULTER] req.body keys:`, req.body ? Object.keys(req.body) : 'UNDEFINED');
-      
       if (err) {
-        console.error(`❌ Erro no multer:`, err.message);
+        console.error(`Erro no multer:`, err.message);
         return res.status(400).json({ error: err.message });
       }
       
@@ -137,8 +130,6 @@ router.post('/', (req, res, next) => {
     });
   } else {
     // Se for application/json, processar sem multer (o JSON pode conter pdfFile em base64)
-    console.log(`   → Processando como application/json`);
-    console.log(`📝 [NO MULTER] req.body tem pdfFile:`, req.body?.pdfFile ? 'SIM' : 'NÃO');
     controller.create(req, res, next);
   }
 });
