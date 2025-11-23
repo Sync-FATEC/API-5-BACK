@@ -27,7 +27,11 @@ export const AppDataSource = new DataSource({
   type: "postgres",
   url: process.env.DB_URL,
   synchronize: true,
-  ssl: { rejectUnauthorized: false },
+  ssl: process.env.DB_SSL === 'true' ? { rejectUnauthorized: false } : false,
   logging: false,
+  extra: {
+    keepAlive: true,
+    connectionTimeoutMillis: Number(process.env.DB_CONN_TIMEOUT_MS || 5000),
+  },
   entities: [User, Batch, Merchandise, MerchandiseType, Order, OrderItem, Stock, UserStock, Section, LogMerchandiseType, Supplier, EntryHistory, ExamType, Appointment, CommitmentNote, ExamPreparationInstruction, NotificationLog, EmailTemplate, EmailTemplateVersion, EmailLog, EmailTemplate],
 });

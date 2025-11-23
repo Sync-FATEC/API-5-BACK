@@ -366,4 +366,25 @@ router.get('/dashboard/complete', reportController.getCompleteDashboardData);
  */
 router.get('/dashboard/complete/report', reportController.generateCompleteDashboardReport);
 
+/**
+ * @swagger
+ * /reports/forecast/balance:
+ *   get:
+ *     summary: Obtém previsão de saldo das notas de empenho para os próximos meses
+ *     tags: [Reports]
+ *     parameters:
+ *       - in: query
+ *         name: months
+ *         schema:
+ *           type: integer
+ *           default: 6
+ *         description: Quantidade de meses futuros para prever
+ *     responses:
+ *       200:
+ *         description: Previsão gerada com sucesso
+ *       500:
+ *         description: Erro interno do servidor
+ */
+router.get('/forecast/balance', reportController.getBalanceForecast);
+
 export default router;
