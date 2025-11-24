@@ -42,9 +42,10 @@ def main():
     if not isinstance(series, list) or len(series) < 12:
         raise ValueError('Série deve conter ao menos 12 valores mensais')
 
-    root = os.path.dirname(os.path.abspath(__file__))
-    model_path = os.path.join(root, 'API-5-BACK', 'src', 'models', 'balance_forecast.pkl')
-    scaler_path = os.path.join(root, 'API-5-BACK', 'src', 'models', 'balance_forecast_scaler.pkl')
+    base_dir = os.path.dirname(os.path.abspath(__file__))
+    models_dir = os.path.normpath(os.path.join(base_dir, '..', 'models'))
+    model_path = os.path.join(models_dir, 'balance_forecast.pkl')
+    scaler_path = os.path.join(models_dir, 'balance_forecast_scaler.pkl')
 
     model, scaler = load_artifacts(model_path, scaler_path)
 

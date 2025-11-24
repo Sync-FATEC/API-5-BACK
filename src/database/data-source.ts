@@ -31,7 +31,12 @@ export const AppDataSource = new DataSource({
   logging: false,
   extra: {
     keepAlive: true,
+    keepAliveInitialDelayMillis: Number(process.env.DB_KEEPALIVE_DELAY_MS || 0),
     connectionTimeoutMillis: Number(process.env.DB_CONN_TIMEOUT_MS || 5000),
+    idleTimeoutMillis: Number(process.env.DB_IDLE_TIMEOUT_MS || 10000),
+    max: Number(process.env.DB_POOL_MAX || 10),
+    query_timeout: Number(process.env.DB_QUERY_TIMEOUT_MS || 0),
+    statement_timeout: Number(process.env.DB_STATEMENT_TIMEOUT_MS || 0),
   },
   entities: [User, Batch, Merchandise, MerchandiseType, Order, OrderItem, Stock, UserStock, Section, LogMerchandiseType, Supplier, EntryHistory, ExamType, Appointment, CommitmentNote, ExamPreparationInstruction, NotificationLog, EmailTemplate, EmailTemplateVersion, EmailLog, EmailTemplate],
 });

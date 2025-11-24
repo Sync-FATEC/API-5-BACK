@@ -87,18 +87,33 @@ app.use("/email-logs", emailLogRouter);
 app.use("/appointments", appointmentRouter);
 app.use(systemErrorHandler);
 
-AppDataSource.initialize()
-  .then(() => {
-    app.listen(3000, () => {
-      console.log("API on http://localhost:3000 \n Swagger on http://localhost:3000/api-docs ");
-      
-      const orderScheduler = new OrderScheduler();
-      orderScheduler.startScheduler(15);
-      const neScheduler = new CommitmentNoteScheduler();
-      const rawInterval = process.env.NE_SCHEDULER_INTERVAL_MINUTES;
-      const parsed = Number(rawInterval);
-      const neInterval = Number.isFinite(parsed) && parsed > 0 ? parsed : 60;
-      neScheduler.startScheduler(neInterval);
-    });
-  })
-  .catch((err) => console.error("Data Source init error:", err));
+const maxRetries = Number(process.env.DB_MAX_RETRIES || 5);
+const baseDelayMs = Number(process.env.DB_RETRY_DELAY_MS || 2000);
+
+async function start() {
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      await AppDataSource.initialize();
+      app.listen(3000, () => {
+        console.log("API on http://localhost:3000 \n Swagger on http://localhost:3000/api-docs ");
+        const orderScheduler = new OrderScheduler();
+        orderScheduler.startScheduler(15);
+        const neScheduler = new CommitmentNoteScheduler();
+        const rawInterval = process.env.NE_SCHEDULER_INTERVAL_MINUTES;
+        const parsed = Number(rawInterval);
+        const neInterval = Number.isFinite(parsed) && parsed > 0 ? parsed : 60;
+        neScheduler.startScheduler(neInterval);
+      });
+      return;
+    } catch (err) {
+      if (attempt === maxRetries) {
+        console.error("Data Source init error:", err);
+        process.exit(1);
+      }
+      const waitMs = baseDelayMs * attempt;
+      await new Promise((r) => setTimeout(r, waitMs));
+    }
+  }
+}
+
+start();

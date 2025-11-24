@@ -50,8 +50,8 @@ export class ForecastService {
       inputSeries = Array(padCount).fill(first).concat(series);
     }
 
-    const root = path.resolve(__dirname, '../../..');
-    const scriptPath = path.join('predict_balance_forecast.py');
+    const root = path.resolve(__dirname);
+    const scriptPath = path.join(root, 'predict_balance_forecast.py');
 
     const payload = JSON.stringify({ series: inputSeries, months });
 
