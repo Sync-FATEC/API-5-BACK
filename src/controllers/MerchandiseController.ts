@@ -166,7 +166,8 @@ export class MerchandiseController {
 
     async getStockAlerts(req: Request, res: Response, next: NextFunction) {
         try {
-            const stockAlerts = await merchandiseService.getStockAlerts();
+            const stockId = (req.query.stockId as string) || undefined;
+            const stockAlerts = await merchandiseService.getStockAlerts(stockId);
             
             res.status(200).json({
                 success: true,

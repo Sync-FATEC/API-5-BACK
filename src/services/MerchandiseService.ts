@@ -140,13 +140,15 @@ export class MerchandiseService {
         }
     }
 
-    async getStockAlerts(): Promise<StockAlertSummary> {
+    async getStockAlerts(stockId?: string): Promise<StockAlertSummary> {
         try {
-            const stockData = await merchandiseRepository.getStockAlerts();
+            const stockData = await merchandiseRepository.getStockAlerts(stockId);
             
             const alerts: StockAlert[] = stockData.map((item: any): StockAlert => {
                 const totalQuantity = parseInt(item.totalQuantity);
                 const minimumStock = parseInt(item.minimumStock);
+                console.log(totalQuantity, minimumStock, item);
+                
                 
                 // Calcular o percentual do estoque atual em relação ao mínimo
                 const percentageAboveMinimum = ((totalQuantity - minimumStock) / minimumStock) * 100;

@@ -616,44 +616,57 @@ export class ReportService {
     async getStockAlerts(params: ReportParams): Promise<StockAlertData[]> {
         const { stockId } = params;
 
-        // Buscar tipos de mercadoria e suas quantidades em estoque
-        const merchandiseTypes = await this.merchandiseTypeRepository.find({
-            where: { stock: { id: stockId } },
-            relations: ['merchandises']
-        });
+        const rows = await this.merchandiseTypeRepository.query(
+            `
+            SELECT 
+                mt.id as "typeId",
+                mt.name as "typeName", 
+                mt."minimumStock" as "minimumStock",
+                mt."unitOfMeasure" as "unitOfMeasure",
+                mt."quantityTotal" as "totalQuantity"
+            FROM merchandise_type mt
+            WHERE mt."stockId" = $1
+            ORDER BY mt.name
+            `,
+            [stockId]
+        );
 
-        const alerts: StockAlertData[] = [];
+        const alerts: StockAlertData[] = rows
+            .map((item: any) => {
+                const totalQuantity = Number(item.totalQuantity) || 0;
+                const minimumStock = Number(item.minimumStock) || 0;
 
-        // Para cada tipo, calcular status do estoque
-        for (const type of merchandiseTypes) {
-            const totalQuantity = type.merchandises?.reduce((sum, m) => sum + m.quantity, 0) || 0;
+                const safeMinimum = minimumStock > 0 ? minimumStock : 0;
+                const percentageAboveMinimum = safeMinimum > 0
+                    ? ((totalQuantity - safeMinimum) / safeMinimum) * 100
+                    : 0;
 
-            let status: 'normal' | 'low' | 'critical' = 'normal';
+                let status: 'normal' | 'low' | 'critical' = 'normal';
 
-            if (totalQuantity === 0) {
-                status = 'critical';
-            } else if (totalQuantity <= type.minimumStock) {
-                status = 'low';
-            }
+                if (safeMinimum > 0 && totalQuantity <= safeMinimum) {
+                    status = 'critical';
+                } else if (safeMinimum > 0 && percentageAboveMinimum <= 50) {
+                    status = 'critical';
+                } else if (safeMinimum > 0 && percentageAboveMinimum <= 85) {
+                    status = 'low';
+                }
 
-            // Incluir apenas itens com alerta (críticos ou baixos)
-            if (status !== 'normal') {
-                alerts.push({
-                    merchandiseTypeId: type.id,
-                    name: type.name,
+                return {
+                    merchandiseTypeId: item.typeId,
+                    name: item.typeName,
                     inStock: totalQuantity,
-                    minimumStock: type.minimumStock,
+                    minimumStock: minimumStock,
                     status
-                });
-            }
-        }
+                } as StockAlertData;
+            })
+            .filter((a: StockAlertData) => a.status !== 'normal')
+            .sort((a: StockAlertData, b: StockAlertData) => {
+                if (a.status === 'critical' && b.status !== 'critical') return -1;
+                if (a.status !== 'critical' && b.status === 'critical') return 1;
+                return a.name.localeCompare(b.name);
+            });
 
-        // Ordenar por status (críticos primeiro) e depois por nome
-        return alerts.sort((a, b) => {
-            if (a.status === 'critical' && b.status !== 'critical') return -1;
-            if (a.status !== 'critical' && b.status === 'critical') return 1;
-            return a.name.localeCompare(b.name);
-        });
+        return alerts;
     }
 
     /**
