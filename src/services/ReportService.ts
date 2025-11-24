@@ -398,21 +398,31 @@ export class ReportService {
      */
     async getOrdersByPeriod(params: ReportParams): Promise<OrdersByPeriodData> {
         const { stockId, startDate, endDate } = params;
+        const limitRaw = process.env.ORDERS_BY_PERIOD_LIMIT;
+        const limit = Number(limitRaw) > 0 ? Number(limitRaw) : 300;
 
-        const where: any = { stock: { id: stockId }, isActive: true };
+        let qb = this.orderRepository
+            .createQueryBuilder('order')
+            .leftJoinAndSelect('order.section', 'section')
+            .leftJoinAndSelect('order.orderItems', 'orderItems')
+            .leftJoinAndSelect('orderItems.merchandiseType', 'merchandiseType')
+            .where('order.stockId = :stockId', { stockId })
+            .andWhere('order.isActive = :isActive', { isActive: true })
+            .orderBy('order.creationDate', 'DESC')
+            .take(limit);
+
         if (startDate && endDate) {
-            where.creationDate = Between(new Date(startDate), new Date(endDate));
+            qb = qb.andWhere('order.creationDate BETWEEN :startDate AND :endDate', {
+                startDate: new Date(startDate),
+                endDate: new Date(endDate),
+            });
         } else if (startDate) {
-            where.creationDate = MoreThanOrEqual(new Date(startDate));
+            qb = qb.andWhere('order.creationDate >= :startDate', { startDate: new Date(startDate) });
         } else if (endDate) {
-            where.creationDate = LessThanOrEqual(new Date(endDate));
+            qb = qb.andWhere('order.creationDate <= :endDate', { endDate: new Date(endDate) });
         }
 
-        const orders = await this.orderRepository.find({
-            where,
-            relations: ['orderItems', 'orderItems.merchandiseType', 'section'],
-            order: { creationDate: 'DESC' }
-        });
+        const orders = await qb.getMany();
 
         const orderViewModels: OrderViewModel[] = orders.map(order => ({
             id: order.id,
@@ -661,20 +671,11 @@ export class ReportService {
             throw new Error('Stock not found');
         }
 
-        // Buscar todos os dados necessários em paralelo
-        const [
-            ordersByPeriod,
-            productStatus,
-            ordersBySection,
-            topProducts,
-            stockAlerts
-        ] = await Promise.all([
-            this.getOrdersByPeriod(params),
-            this.getProductStatusData(params),
-            this.getOrdersBySection(params),
-            this.getTopProductsInOrders(params),
-            this.getStockAlerts(params)
-        ]);
+        const ordersByPeriod = await this.getOrdersByPeriod(params);
+        const productStatus = await this.getProductStatusData(params);
+        const ordersBySection = await this.getOrdersBySection(params);
+        const topProducts = await this.getTopProductsInOrders(params);
+        const stockAlerts = await this.getStockAlerts(params);
 
         return {
             stockInfo: {
