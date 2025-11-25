@@ -1,7 +1,9 @@
 import { Request, Response } from 'express';
 import { ReportService } from '../services/ReportService';
+import { ForecastService } from '../services/ForecastService';
 
 const reportService = new ReportService();
+const forecastService = new ForecastService();
 
 export class ReportController {
     async generateDashboardReport(req: Request, res: Response) {
@@ -85,7 +87,24 @@ export class ReportController {
             });
         }
     }
-    
+
+    async getBalanceForecast(req: Request, res: Response) {
+        try {
+            const monthsRaw = req.query.months as string | undefined;
+            const months = monthsRaw ? Number(monthsRaw) : 6;
+
+            const result = await forecastService.forecastNextMonths(months);
+            return res.json({ success: true, data: result });
+        } catch (error) {
+            console.error('Error getting balance forecast:', error);
+            return res.status(500).json({
+                success: false,
+                message: 'Erro interno ao obter previsão de saldo',
+                details: error instanceof Error ? error.message : 'Unknown error',
+            });
+        }
+    }
+
     // Endpoints para os dashboards específicos
     
     /**
@@ -285,7 +304,7 @@ export class ReportController {
     /**
      * Gera relatório completo com todos os dashboards
      */
-    async generateCompleteDashboardReport(req: Request, res: Response) {
+  async generateCompleteDashboardReport(req: Request, res: Response) {
         try {
             const { format, stockId, startDate, endDate, period } = req.query;
             
@@ -329,6 +348,8 @@ export class ReportController {
                 error: 'Internal server error while generating complete dashboard report',
                 details: error instanceof Error ? error.message : 'Unknown error'
             });
-        }
-    }
+  }
+
+  
+}
 }

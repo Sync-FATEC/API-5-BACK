@@ -1,5 +1,7 @@
 import { Router } from "express";
 import { UserController } from "../controllers/UserController";
+import { AuthMiddleware } from "../middlewares/authContext";
+import { RoleEnum } from "../database/enums/RoleEnum";
 
 const userController = new UserController();
 const router = Router()
@@ -72,6 +74,8 @@ router.get("/user-data/:email", userController.getUserData);
  *         description: Dados inválidos
  */
 router.post("/register", userController.create);
+
+router.post("/users", AuthMiddleware.authenticate, AuthMiddleware.requireRole(RoleEnum.ADMIN), userController.createAdmin);
 
 /**
  * @swagger

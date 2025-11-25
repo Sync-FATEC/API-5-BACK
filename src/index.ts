@@ -3,13 +3,11 @@ import swaggerUi from 'swagger-ui-express';
 import swaggerJsdoc from 'swagger-jsdoc';
 import cors from "cors";
 import { AppDataSource } from "./database/data-source";
-const firebase = require("../firebase/firebase.json");
-import admin from "firebase-admin";
 import { authMiddleware } from "./middlewares/authContext";
 import { systemErrorHandler } from "./middlewares/SystemError";
-import { initializeApp } from "firebase/app";
-import { getAuth } from "firebase/auth";
 import { OrderScheduler } from "./schedulers/OrderScheduler";
+import { AppointmentScheduler } from "./schedulers/AppointmentScheduler";
+import { CommitmentNoteScheduler } from "./schedulers/CommitmentNoteScheduler";
 
 import authRouter from "./routes/authRoutes";
 import stockRouter from "./routes/StockRoutes";
@@ -19,20 +17,12 @@ import sectionRouter from "./routes/SectionRoutes";
 import orderRouter from "./routes/OrderRoutes";
 import supplierRouter from "./routes/SupplierRoutes";
 import reportRouter from "./routes/ReportRoutes";
-
-const firebaseConfig = {
-  apiKey: process.env.FIREBASE_API_KEY,
-  authDomain: process.env.FIREBASE_AUTH_DOMAIN,
-  projectId: process.env.FIREBASE_PROJECT_ID,
-  storageBucket: process.env.FIREBASE_STORAGE_BUCKET,
-  messagingSenderId: process.env.FIREBASE_MESSAGING_SENDER_ID,
-  appId: process.env.FIREBASE_APP_ID
-};
-
-// Inicializar Firebase
-export const adminFirebase = admin.initializeApp({ credential: admin.credential.cert(firebase as admin.ServiceAccount) });
-const firebaseApp = initializeApp(firebaseConfig);
-export const firebaseAuth = getAuth(firebaseApp);
+import examTypeRouter from "./routes/ExamTypeRoutes";
+import appointmentRouter from "./routes/AppointmentRoutes";
+import commitmentNoteRouter from "./routes/CommitmentNoteRoutes";
+import examPreparationRouter from "./routes/ExamPreparationInstructionRoutes";
+import emailTemplateRouter from "./routes/EmailTemplateRoutes";
+import emailLogRouter from "./routes/EmailLogRoutes";
 
 const swaggerOptions = {
   definition: {
@@ -48,14 +38,32 @@ const swaggerOptions = {
       },
     ],
   },
-  apis: ['./src/routes/*.ts', './src/database/entities/*.ts'], // Ajuste conforme suas rotas
+  apis: ['./src/routes/*.ts', './src/database/entities/*.ts'],
 };
 
 const swaggerSpec = swaggerJsdoc(swaggerOptions);
 
 const app = express();
 app.use(cors());
-app.use(express.json());
+
+// Custom middleware to skip body parsing for multipart requests
+app.use((req, res, next) => {
+  const contentType = req.headers['content-type'] || '';
+  
+  if (contentType.includes('multipart/form-data')) {
+    return next();
+  }
+  
+  // For other content types, use standard parsing
+  if (contentType.includes('application/json') || contentType === '') {
+    express.json({ limit: '10mb' })(req, res, next);
+  } else {
+    express.urlencoded({ limit: '10mb', extended: true })(req, res, next);
+  }
+});
+
+// Servir arquivos estáticos (uploads)
+app.use(express.static('uploads'));
 
 // Swagger route
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
@@ -64,6 +72,7 @@ app.use("/auth", authRouter);
 app.use(authMiddleware);
 
 // Rotas protegidas por autenticação
+app.use("/commitment-notes", commitmentNoteRouter);
 app.use("/sections", sectionRouter);
 app.use("/orders", orderRouter);
 app.use("/merchandise", merchandiseRouter);
@@ -71,16 +80,40 @@ app.use("/merchandise-types", merchandiseTypeRouter);
 app.use("/stocks", stockRouter);
 app.use("/suppliers", supplierRouter);
 app.use("/reports", reportRouter);
+app.use("/exam-types", examTypeRouter);
+app.use("/exam-preparations", examPreparationRouter);
+app.use("/email-templates", emailTemplateRouter);
+app.use("/email-logs", emailLogRouter);
+app.use("/appointments", appointmentRouter);
 app.use(systemErrorHandler);
 
-AppDataSource.initialize()
-  .then(() => {
-    app.listen(3000, () => {
-      console.log("API on http://localhost:3000 \n Swagger on http://localhost:3000/api-docs ");
-      
-      // Iniciar o scheduler para verificar pedidos vencidos a cada 15 minutos
-      const orderScheduler = new OrderScheduler();
-      orderScheduler.startScheduler(15);
-    });
-  })
-  .catch((err) => console.error("Data Source init error:", err));
+const maxRetries = Number(process.env.DB_MAX_RETRIES || 5);
+const baseDelayMs = Number(process.env.DB_RETRY_DELAY_MS || 2000);
+
+async function start() {
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      await AppDataSource.initialize();
+      app.listen(3000, () => {
+        console.log("API on http://localhost:3000 \n Swagger on http://localhost:3000/api-docs ");
+        const orderScheduler = new OrderScheduler();
+        orderScheduler.startScheduler(15);
+        const neScheduler = new CommitmentNoteScheduler();
+        const rawInterval = process.env.NE_SCHEDULER_INTERVAL_MINUTES;
+        const parsed = Number(rawInterval);
+        const neInterval = Number.isFinite(parsed) && parsed > 0 ? parsed : 60;
+        neScheduler.startScheduler(neInterval);
+      });
+      return;
+    } catch (err) {
+      if (attempt === maxRetries) {
+        console.error("Data Source init error:", err);
+        process.exit(1);
+      }
+      const waitMs = baseDelayMs * attempt;
+      await new Promise((r) => setTimeout(r, waitMs));
+    }
+  }
+}
+
+start();

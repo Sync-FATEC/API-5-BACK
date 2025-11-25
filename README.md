@@ -10,28 +10,6 @@
   ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-316192?style=for-the-badge&logo=postgresql&logoColor=white)
 </div>
 
-## 📋 Sobre
-Este backend é responsável por:
-- Gerenciamento de usuários e autenticação segura
-- Integração com banco de dados relacional (**PostgreSQL**)
-- Processamento de dados e relatórios
-- Integração com **Firebase** para funcionalidades adicionais
-- API para comunicação com o frontend
-
-## 🚀 Tecnologias
-- **TypeScript**
-- **Python**
-- **PostgreSQL**
-- **Firebase**
-
-## ⚙️ Funcionalidades
-- Autenticação via login seguro
-- Cadastro, atualização e exclusão de itens
-- Leitura de QR Codes para identificação rápida
-- Controle de estoque do almoxarifado e farmácia
-- Relatórios estratégicos
-- Alertas automáticos
-
 ## 📚 Documentação da API
 
 Acesse a documentação da API em:
@@ -93,12 +71,138 @@ npm run dev
 ## 📁 Estrutura de Diretórios
 ```
 src/
-├── controllers/
-├── services/
-├── repositories/
-├── dtos/
-├── routes/
-└── utils/
+├── config/                       # Configurações da aplicação
+│   └── firebase.ts               # Configuração do Firebase Admin SDK
+│
+├── controllers/                  # Controladores (camada de requisição/resposta)
+│   ├── AppointmentController.ts  # Controlador de agendamentos
+│   ├── CommitmentNoteController.ts
+│   ├── EmailLogController.ts
+│   ├── EmailTemplateController.ts
+│   ├── ExamPreparationInstructionController.ts
+│   ├── ExamTypeController.ts
+│   ├── MerchandiseController.ts
+│   ├── MerchandiseTypeController.ts
+│   ├── OrderController.ts
+│   ├── ReportController.ts      # Controlador de relatórios e dashboards
+│   ├── SectionController.ts
+│   ├── StockController.ts
+│   ├── SupplierController.ts
+│   └── UserController.ts
+│
+├── services/                     # Serviços (lógica de negócio)
+│   ├── AppointmentService.ts
+│   ├── CommitmentNoteService.ts
+│   ├── CommitmentNoteEmailService.ts
+│   ├── CommitmentNotePdfService.ts
+│   ├── EmailLogService.ts
+│   ├── EmailTemplateService.ts
+│   ├── ExamPreparationInstructionService.ts
+│   ├── ExamTypeService.ts
+│   ├── ForecastService.ts        # Serviço de previsão de estoque
+│   ├── MerchandiseService.ts
+│   ├── MerchandiseTypeService.ts
+│   ├── NotificationService.ts
+│   ├── OrderService.ts
+│   ├── PdfService.ts
+│   ├── ReportService.ts          # Serviço de relatórios
+│   ├── SectionService.ts
+│   ├── StockService.ts
+│   ├── SupplierService.ts
+│   ├── UserService.ts
+│   └── predict_balance_forecast.py  # Script Python para previsão
+│
+├── repository/                   # Repositórios (acesso a dados)
+│   ├── AppointmentRepository.ts
+│   ├── CommitmentNoteRepository.ts
+│   ├── EmailLogRepository.ts
+│   ├── EmailTemplateRepository.ts
+│   ├── EntryHistoryRepository.ts
+│   ├── ExamPreparationInstructionRepository.ts
+│   ├── ExamTypeRepository.ts
+│   ├── LogMerchandiseType.ts
+│   ├── MerchandiseRepository.ts
+│   ├── MerchandiseTypeRepository.ts
+│   ├── NotificationLogRepository.ts
+│   ├── OrderRepository.ts
+│   ├── SectionRepository.ts
+│   ├── StockRepository.ts
+│   ├── SupplierRepository.ts
+│   └── UsersRepository.ts
+│
+├── routes/                       # Rotas (endpoints da API)
+│   ├── AppointmentRoutes.ts
+│   ├── authRoutes.ts             # Rotas de autenticação
+│   ├── CommitmentNoteRoutes.ts
+│   ├── EmailLogRoutes.ts
+│   ├── EmailTemplateRoutes.ts
+│   ├── ExamPreparationInstructionRoutes.ts
+│   ├── ExamTypeRoutes.ts
+│   ├── MerchandiseRoutes.ts
+│   ├── MerchandiseTypeRoutes.ts
+│   ├── OrderRoutes.ts
+│   ├── ReportRoutes.ts           # Rotas de relatórios
+│   ├── SectionRoutes.ts
+│   ├── StockRoutes.ts
+│   ├── SupplierRoutes.ts
+│   └── UserRoutes.ts
+│
+├── database/                     # Configuração e entidades do banco de dados
+│   ├── data-source.ts            # Configuração do TypeORM
+│   ├── entities/                 # Entidades (modelos do BD)
+│   │   ├── Appointment.ts
+│   │   ├── Batch.ts
+│   │   ├── CommitmentNote.ts
+│   │   ├── EmailLog.ts
+│   │   ├── EmailTemplate.ts
+│   │   ├── EmailTemplateVersion.ts
+│   │   ├── EntryHistory.ts
+│   │   ├── ExamPreparationInstruction.ts
+│   │   ├── ExamType.ts
+│   │   ├── LogMerchandiseType.ts
+│   │   ├── Merchandise.ts
+│   │   ├── MerchandiseType.ts
+│   │   ├── NotificationLog.ts
+│   │   ├── Order.ts
+│   │   ├── OrderItem.ts
+│   │   ├── Section.ts
+│   │   ├── Stock.ts
+│   │   ├── Supplier.ts
+│   │   ├── User.ts
+│   │   └── UserStock.ts
+│   └── enums/                    # Enumerações do banco
+│       ├── OrderStatus.ts
+│       ├── UserRole.ts
+│       └── ...
+│
+├── middlewares/                  # Middlewares (autenticação, tratamento de erros)
+│   ├── authContext.ts            # Middleware de autenticação Firebase
+│   └── SystemError.ts            # Tratamento de erros
+│
+├── types/                        # Definições de tipos TypeScript
+│   ├── AuthContext.ts
+│   └── ...
+│
+├── models/                       # Modelos/DTOs (estruturas de dados)
+│   └── [modelos específicos]
+│
+├── schedulers/                   # Agendadores de tarefas (CRON jobs)
+│   └── [tarefas recorrentes]
+│
+├── scripts/                      # Scripts utilitários
+│   ├── seed.ts                   # Script para popular dados iniciais
+│   └── ...
+│
+├── templates/                    # Templates (email, PDF, etc)
+│   └── email/                    # Templates de email
+│       └── ...
+│
+├── utils/                        # Funções utilitárias
+│   ├── validators.ts
+│   ├── formatters.ts
+│   └── ...
+│
+└── index.ts                      # Ponto de entrada da aplicação
 ```
 
 ## 👥 Time
@@ -111,3 +215,4 @@ src/
 | Filipe Colla | Desenvolvedor |
 | João Gabriel Solis | Desenvolvedor |
 | Kauê Francisco | Desenvolvedor |
+

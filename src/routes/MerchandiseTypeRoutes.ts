@@ -221,9 +221,9 @@ router.patch('/:id/quantity-total', AuthMiddleware.requireRole(RoleEnum.ADMIN), 
  *           type: boolean
  *           example: true
  *         group:
-           type: string
-           enum: [expediente, limpeza, "Almox Virtual", permanente]
-           example: expediente
+ *           type: string
+ *           enum: [expediente, limpeza, "Almox Virtual", permanente]
+ *           example: expediente
  *         minimumStock:
  *           type: number
  *           example: 100
@@ -315,42 +315,42 @@ router.get("/details/:id", merchandiseTypeController.getById);
  *           schema:
  *             type: object
  *             required:
-               - name
-               - recordNumber
-               - unitOfMeasure
-               - controlled
-               - group
-               - minimumStock
-               - stockId
-             properties:
-               name:
-                 type: string
-                 example: "Caneta Azul"
-               recordNumber:
-                 type: string
-                 example: "REC001"
-               unitOfMeasure:
-                 type: string
-                 example: "unidade"
-               quantityTotal:
-                 type: number
-                 default: 0
-                 example: 100
-               controlled:
-                 type: boolean
-                 example: true
-               group:
-                 type: string
-                 enum: [expediente, limpeza, "Almox Virtual", permanente]
-                 example: "expediente"
-               minimumStock:
-                 type: number
-                 example: 10
-               stockId:
-                 type: string
-                 format: uuid
-                 example: "123e4567-e89b-12d3-a456-426614174000"
-                 description: "ID do stock ao qual o tipo de mercadoria pertence"
+ *               - name
+ *               - recordNumber
+ *               - unitOfMeasure
+ *               - controlled
+ *               - group
+ *               - minimumStock
+ *               - stockId
+ *             properties:
+ *               name:
+ *                 type: string
+ *                 example: "Caneta Azul"
+ *               recordNumber:
+ *                 type: string
+ *                 example: "REC001"
+ *               unitOfMeasure:
+ *                 type: string
+ *                 example: "unidade"
+ *               quantityTotal:
+ *                 type: number
+ *                 default: 0
+ *                 example: 100
+ *               controlled:
+ *                 type: boolean
+ *                 example: true
+ *               group:
+ *                 type: string
+ *                 enum: [expediente, limpeza, "Almox Virtual", permanente]
+ *                 example: "expediente"
+ *               minimumStock:
+ *                 type: number
+ *                 example: 10
+ *               stockId:
+ *                 type: string
+ *                 format: uuid
+ *                 example: "123e4567-e89b-12d3-a456-426614174000"
+ *                 description: "ID do stock ao qual o tipo de mercadoria pertence"
  *     responses:
  *       201:
  *         description: Tipo de produto criado com sucesso

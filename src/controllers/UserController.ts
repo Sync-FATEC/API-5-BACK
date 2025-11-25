@@ -2,10 +2,46 @@ import { Request, Response, NextFunction } from "express";
 import { UsersType } from "../types/UsersType";
 import { SystemError } from "../middlewares/SystemError";
 import { UserServices } from "../services/UserServices";
+import { RoleEnum } from "../database/enums/RoleEnum";
 
 const userServices = new UserServices();
 export class UserController {
     async create(req: Request, res: Response, next: NextFunction) {
+        try {
+            const users = req.body.users;
+
+            if (!users || !Array.isArray(users) || users.length === 0) {
+                throw new SystemError("Lista de usuários é obrigatória");
+            }
+
+            for (const user of users) {
+                if (!user.name || !user.email || !user.role) {
+                    throw new SystemError("Dados incompletos em um ou mais usuários");
+                }
+              if (user.role !== RoleEnum.PACIENTE) {
+          throw new SystemError("Cadastro permitido apenas para usuários com role PACIENTE");
+        }
+      }
+
+            const userTypes = users.map(user => ({
+                email: user.email,
+                name: user.name,
+                role: user.role,
+            } as UsersType));
+
+            await Promise.all(userTypes.map(userType => userServices.createUser(userType)));
+
+            res.status(201).json({
+                success: true,
+                data: userTypes,
+                message: "Usuários criados com sucesso"
+            });
+        } catch (error) {
+            next(error);
+        }
+    }
+
+    async createAdmin(req: Request, res: Response, next: NextFunction) {
         try {
             const users = req.body.users;
 

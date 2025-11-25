@@ -5,7 +5,7 @@ import { UsersType } from "../types/UsersType";
 import { RoleEnum } from "../database/enums/RoleEnum";
 import { StockResponsibility } from "../database/enums/StockResponsability";
 import { sendPasswordResetEmail, createUserWithEmailAndPassword, signInWithEmailAndPassword } from "firebase/auth";
-import { firebaseAuth, adminFirebase } from "../index";
+import { firebaseAuth, adminFirebase } from "../config/firebase";
 
 const repository = AppDataSource.getRepository(User)
 
@@ -51,7 +51,28 @@ export class UsersRepository {
             await this.forgotPassword(user.email as string)
             
             return userDB
-        } catch (error) {
+        } catch (error: any) {
+            // Se o email já estiver em uso no Firebase, recuperar UID via Admin SDK e criar apenas no banco
+            if (error?.code === 'auth/email-already-in-use') {
+                try {
+                    const existing = await adminFirebase.auth().getUserByEmail(user.email as string);
+
+                    const userDB = await this.create({
+                        email: user.email as string,
+                        name: user.name as string,
+                        firebaseUid: existing.uid,
+                        role: user.role as RoleEnum,
+                    })
+
+                    await this.forgotPassword(user.email as string)
+
+                    return userDB
+                } catch (adminErr) {
+                    console.error("Erro ao recuperar usuário existente no Firebase", adminErr)
+                    throw adminErr
+                }
+            }
+
             console.error("Erro ao criar o usuario", error)
             throw error
         }
@@ -140,23 +161,41 @@ export class UsersRepository {
     }
 
     // Função para buscar todos os usuários
-    async getAllUsers() {
-        try {
-            return await repository.find({
+  async getAllUsers() {
+    try {
+      return await repository.find({
                 relations: {
                     userStocks: {
                         stock: true
                     }
                 },
-                order: {
-                    createdAt: 'DESC'
-                }
-            });
-        } catch (error) {
-            console.error("Erro ao buscar todos os usuários", error);
-            throw error;
+        order: {
+          createdAt: 'DESC'
         }
+      });
+    } catch (error) {
+      console.error("Erro ao buscar todos os usuários", error);
+      throw error;
     }
+  }
+
+  async searchPatients(query?: string) {
+    try {
+      const qb = repository.createQueryBuilder('u')
+        .where('u.role = :role', { role: RoleEnum.PACIENTE })
+        .andWhere('u.isActive = :active', { active: true })
+        .orderBy('u.name', 'ASC');
+
+      if (query && query.trim()) {
+        qb.andWhere('(LOWER(u.name) LIKE :q OR LOWER(u.email) LIKE :q)', { q: `%${query.trim().toLowerCase()}%` });
+      }
+
+      return qb.getMany();
+    } catch (error) {
+      console.error("Erro ao buscar pacientes", error);
+      throw error;
+    }
+  }
 
     // Função para atualizar usuário
     async updateUser(userId: string, updateData: { name?: string; email?: string; role?: RoleEnum; isActive?: boolean }) {
